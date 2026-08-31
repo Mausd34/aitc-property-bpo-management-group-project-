@@ -1,11 +1,17 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db.models import Count
 from .models import *
 from .serializers import *
 class ClientViewSet(viewsets.ModelViewSet): queryset=Client.objects.all().order_by('-id'); serializer_class=ClientSerializer
-class PropertyViewSet(viewsets.ModelViewSet): queryset=Property.objects.all().order_by('-id'); serializer_class=PropertySerializer
+class PropertyViewSet(viewsets.ModelViewSet): 
+    queryset=Property.objects.all().order_by('-id'); 
+    serializer_class=PropertySerializer;
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return PropertyCreateSerializer
+        return PropertySerializer
 class VendorViewSet(viewsets.ModelViewSet): queryset=Vendor.objects.all().order_by('-id'); serializer_class=VendorSerializer
 class WorkOrderViewSet(viewsets.ModelViewSet): queryset=WorkOrder.objects.all().order_by('-id'); serializer_class=WorkOrderSerializer
 class AssignmentViewSet(viewsets.ModelViewSet): queryset=Assignment.objects.all().order_by('-id'); serializer_class=AssignmentSerializer

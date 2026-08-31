@@ -4,7 +4,7 @@ class Client(models.Model):
  name=models.CharField(max_length=150); email=models.EmailField(); phone=models.CharField(max_length=40,blank=True); address=models.TextField(blank=True)
  def __str__(self): return self.name
 class Property(models.Model):
- client=models.ForeignKey(Client,on_delete=models.CASCADE,related_name='properties'); address=models.TextField(); property_type=models.CharField(max_length=80,blank=True); details=models.TextField(blank=True); status=models.CharField(max_length=50,default='Active')
+ client=models.ForeignKey(Client,on_delete=models.CASCADE,related_name='properties'); address=models.TextField(); property_type=models.CharField(max_length=80,blank=True); details=models.TextField(blank=True); status=models.CharField(max_length=50,default='Active'); image=models.ImageField(upload_to='properties/',blank=True,null=True)
  def __str__(self): return self.address
 class Vendor(models.Model):
  name=models.CharField(max_length=150); email=models.EmailField(blank=True); phone=models.CharField(max_length=40,blank=True); service_area=models.CharField(max_length=150,blank=True); rating=models.DecimalField(max_digits=3,decimal_places=2,default=0); status=models.CharField(max_length=50,default='Active')

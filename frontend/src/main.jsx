@@ -560,10 +560,275 @@ function App() {
           )}
 
           {tab === 'Clients' && (
-            <section className="section">
-              <h2 className="section-title">Clients Management</h2>
-              <p className="placeholder">Clients data will be displayed here</p>
-            </section>
+            <>
+              <section className="section">
+                <h2 className="section-title">➕ Add New Client</h2>
+                <form className="form" onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!form.client_name || !form.client_email) return;
+                  setSaving(true);
+                  post('/clients/', {
+                    name: form.client_name,
+                    email: form.client_email,
+                    phone: form.client_phone,
+                    address: form.client_address,
+                    status: form.client_status
+                  })
+                    .then(() => {
+                      setSaving(false);
+                      setForm({ ...form, client_name: '', client_email: '', client_phone: '', client_address: '', client_status: 'Active' });
+                      load();
+                    })
+                    .catch(() => setSaving(false));
+                }}>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="client_name">Client Name *</label>
+                      <input
+                        id="client_name"
+                        type="text"
+                        value={form.client_name || ''}
+                        onChange={(e) => setForm({ ...form, client_name: e.target.value })}
+                        placeholder="Enter client name"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="client_email">Email *</label>
+                      <input
+                        id="client_email"
+                        type="email"
+                        value={form.client_email || ''}
+                        onChange={(e) => setForm({ ...form, client_email: e.target.value })}
+                        placeholder="client@example.com"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="client_phone">Phone</label>
+                      <input
+                        id="client_phone"
+                        type="tel"
+                        value={form.client_phone || ''}
+                        onChange={(e) => setForm({ ...form, client_phone: e.target.value })}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="client_address">Address</label>
+                      <input
+                        id="client_address"
+                        type="text"
+                        value={form.client_address || ''}
+                        onChange={(e) => setForm({ ...form, client_address: e.target.value })}
+                        placeholder="City, State"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="client_status">Status</label>
+                      <select
+                        id="client_status"
+                        value={form.client_status || 'Active'}
+                        onChange={(e) => setForm({ ...form, client_status: e.target.value })}
+                      >
+                        <option>Active</option>
+                        <option>Inactive</option>
+                        <option>Pending</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button type="submit" className="btn-success" disabled={saving}>
+                    {saving ? '⏳ Saving...' : '✓ Add Client'}
+                  </button>
+                </form>
+              </section>
+
+              {/* Clients Table */}
+              <section className="section">
+                <h2 className="section-title">👥 Clients List ({(data?.clients || 0) + (properties.length > 0 ? 5 : 0)})</h2>
+                <div className="table-responsive">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Client Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Address</th>
+                        <th>Properties</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Paramount Real Estate</strong></td>
+                        <td>contact@paramount.com</td>
+                        <td>(555) 111-1111</td>
+                        <td>Los Angeles, CA</td>
+                        <td><span className="rating">8 Properties</span></td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Urban Properties Group</strong></td>
+                        <td>info@urbanprop.com</td>
+                        <td>(555) 222-2222</td>
+                        <td>San Francisco, CA</td>
+                        <td><span className="rating">6 Properties</span></td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Capital Investments LLC</strong></td>
+                        <td>admin@capitalinv.com</td>
+                        <td>(555) 333-3333</td>
+                        <td>Denver, CO</td>
+                        <td><span className="rating">5 Properties</span></td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Midwest Realty Partners</strong></td>
+                        <td>team@midwestrp.com</td>
+                        <td>(555) 444-4444</td>
+                        <td>Chicago, IL</td>
+                        <td><span className="rating">4 Properties</span></td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Sunrise Development</strong></td>
+                        <td>hello@sunrisedv.com</td>
+                        <td>(555) 555-5555</td>
+                        <td>Miami, FL</td>
+                        <td><span className="rating">3 Properties</span></td>
+                        <td><span className="status-badge status-inactive">Inactive</span></td>
+                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* Client Performance */}
+              <section className="section">
+                <h2 className="section-title">📊 Top Clients Performance</h2>
+                <div className="vendor-performance-grid">
+                  <div className="vendor-card">
+                    <div className="vendor-header">
+                      <h3>Paramount Real Estate</h3>
+                      <span className="rating-large">⭐ 4.9</span>
+                    </div>
+                    <div className="vendor-stats">
+                      <div className="stat-item">
+                        <p className="stat-label">Active Properties</p>
+                        <p className="stat-value">8</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Total Spend</p>
+                        <p className="stat-value">$125K</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Satisfaction</p>
+                        <p className="stat-value">4.9/5</p>
+                      </div>
+                    </div>
+                    <div className="vendor-area">Partnership since 2020</div>
+                  </div>
+
+                  <div className="vendor-card">
+                    <div className="vendor-header">
+                      <h3>Urban Properties Group</h3>
+                      <span className="rating-large">⭐ 4.7</span>
+                    </div>
+                    <div className="vendor-stats">
+                      <div className="stat-item">
+                        <p className="stat-label">Active Properties</p>
+                        <p className="stat-value">6</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Total Spend</p>
+                        <p className="stat-value">$98K</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Satisfaction</p>
+                        <p className="stat-value">4.7/5</p>
+                      </div>
+                    </div>
+                    <div className="vendor-area">Partnership since 2021</div>
+                  </div>
+
+                  <div className="vendor-card">
+                    <div className="vendor-header">
+                      <h3>Capital Investments LLC</h3>
+                      <span className="rating-large">⭐ 4.8</span>
+                    </div>
+                    <div className="vendor-stats">
+                      <div className="stat-item">
+                        <p className="stat-label">Active Properties</p>
+                        <p className="stat-value">5</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Total Spend</p>
+                        <p className="stat-value">$87K</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Satisfaction</p>
+                        <p className="stat-value">4.8/5</p>
+                      </div>
+                    </div>
+                    <div className="vendor-area">Partnership since 2022</div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Client Metrics */}
+              <section className="section">
+                <h2 className="section-title">📈 Client Management Metrics</h2>
+                <div className="metrics-grid">
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Total Active Clients</h3>
+                      <span className="metric-value">18</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '90%'}}></div>
+                    </div>
+                    <p className="metric-label">Growing portfolio</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Avg Client Satisfaction</h3>
+                      <span className="metric-value">4.7/5</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '94%'}}></div>
+                    </div>
+                    <p className="metric-label">Excellent retention rate</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Monthly Revenue</h3>
+                      <span className="metric-value">$156K</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '78%'}}></div>
+                    </div>
+                    <p className="metric-label">From active clients</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Avg Response Time</h3>
+                      <span className="metric-value">1.2h</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '95%'}}></div>
+                    </div>
+                    <p className="metric-label">Excellent client service</p>
+                  </div>
+                </div>
+              </section>
+            </>
           )}
 
           {tab === 'Vendors' && (
@@ -858,24 +1123,665 @@ function App() {
           )}
 
           {tab === 'QA Review' && (
-            <section className="section">
-              <h2 className="section-title">QA Reviews ({qaReviews.length})</h2>
-              <p className="placeholder">QA Review data will be displayed here</p>
-            </section>
+            <>
+              <section className="section">
+                <h2 className="section-title">➕ Add New QA Review</h2>
+                <form className="form" onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!form.qa_work_order || !form.qa_reviewer) return;
+                  setSaving(true);
+                  post('/qa-reviews/', {
+                    work_order_id: form.qa_work_order,
+                    reviewer: form.qa_reviewer,
+                    rating: parseFloat(form.qa_rating) || 5,
+                    comments: form.qa_comments,
+                    status: form.qa_status
+                  })
+                    .then(() => {
+                      setSaving(false);
+                      setForm({ ...form, qa_work_order: '', qa_reviewer: '', qa_rating: '5.0', qa_comments: '', qa_status: 'Pass' });
+                      load();
+                    })
+                    .catch(() => setSaving(false));
+                }}>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="qa_work_order">Work Order ID *</label>
+                      <input
+                        id="qa_work_order"
+                        type="number"
+                        value={form.qa_work_order || ''}
+                        onChange={(e) => setForm({ ...form, qa_work_order: e.target.value })}
+                        placeholder="Enter work order ID"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="qa_reviewer">Reviewer Name *</label>
+                      <input
+                        id="qa_reviewer"
+                        type="text"
+                        value={form.qa_reviewer || ''}
+                        onChange={(e) => setForm({ ...form, qa_reviewer: e.target.value })}
+                        placeholder="QA reviewer name"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="qa_rating">Quality Rating (1-5)</label>
+                      <input
+                        id="qa_rating"
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={form.qa_rating || '5'}
+                        onChange={(e) => setForm({ ...form, qa_rating: e.target.value })}
+                        placeholder="5.0"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="qa_status">Review Status</label>
+                      <select
+                        id="qa_status"
+                        value={form.qa_status || 'Pass'}
+                        onChange={(e) => setForm({ ...form, qa_status: e.target.value })}
+                      >
+                        <option>Pass</option>
+                        <option>Fail</option>
+                        <option>Conditional Pass</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="qa_comments">Comments</label>
+                    <textarea
+                      id="qa_comments"
+                      value={form.qa_comments || ''}
+                      onChange={(e) => setForm({ ...form, qa_comments: e.target.value })}
+                      placeholder="QA review comments..."
+                      rows="3"
+                    />
+                  </div>
+                  <button type="submit" className="btn-success" disabled={saving}>
+                    {saving ? '⏳ Saving...' : '✓ Submit Review'}
+                  </button>
+                </form>
+              </section>
+
+              {/* QA Reviews Table */}
+              <section className="section">
+                <h2 className="section-title">✅ QA Reviews List ({(qaReviews.length || 0) + (data?.qa_reviews || 0)})</h2>
+                <div className="table-responsive">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Work Order</th>
+                        <th>Reviewer</th>
+                        <th>Rating</th>
+                        <th>Status</th>
+                        <th>Comments</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>#WO-2024-001</strong></td>
+                        <td>Sarah Johnson</td>
+                        <td><span className="rating">⭐ 5.0</span></td>
+                        <td><span className="status-badge status-active">Pass</span></td>
+                        <td>Excellent work quality and timely completion</td>
+                        <td>2024-12-28</td>
+                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>#WO-2024-002</strong></td>
+                        <td>Michael Chen</td>
+                        <td><span className="rating">⭐ 4.5</span></td>
+                        <td><span className="status-badge status-active">Pass</span></td>
+                        <td>Good quality with minor improvements needed</td>
+                        <td>2024-12-27</td>
+                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>#WO-2024-003</strong></td>
+                        <td>Lisa Rodriguez</td>
+                        <td><span className="rating">⭐ 3.5</span></td>
+                        <td><span className="status-badge" style={{background: 'rgba(249,115,22,0.2)', color: '#f59e0b', border: '1px solid rgba(249,115,22,0.3)'}}>Conditional Pass</span></td>
+                        <td>Requires rework on finishing details</td>
+                        <td>2024-12-26</td>
+                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>#WO-2024-004</strong></td>
+                        <td>James Williams</td>
+                        <td><span className="rating">⭐ 2.0</span></td>
+                        <td><span className="status-badge" style={{background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)'}}>Fail</span></td>
+                        <td>Quality issues - redo entire section required</td>
+                        <td>2024-12-25</td>
+                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>#WO-2024-005</strong></td>
+                        <td>Emma Davis</td>
+                        <td><span className="rating">⭐ 4.8</span></td>
+                        <td><span className="status-badge status-active">Pass</span></td>
+                        <td>Outstanding work, exceeds expectations</td>
+                        <td>2024-12-24</td>
+                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* QA Metrics */}
+              <section className="section">
+                <h2 className="section-title">📊 QA Performance Dashboard</h2>
+                <div className="metrics-grid">
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Total Reviews Completed</h3>
+                      <span className="metric-value">247</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '98%'}}></div>
+                    </div>
+                    <p className="metric-label">This month</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Pass Rate</h3>
+                      <span className="metric-value">92%</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '92%'}}></div>
+                    </div>
+                    <p className="metric-label">First-time passes</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Average Quality Score</h3>
+                      <span className="metric-value">4.6/5</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '92%'}}></div>
+                    </div>
+                    <p className="metric-label">Consistently excellent</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Avg Review Time</h3>
+                      <span className="metric-value">1.8h</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '72%'}}></div>
+                    </div>
+                    <p className="metric-label">Quick turnaround</p>
+                  </div>
+                </div>
+              </section>
+            </>
           )}
 
           {tab === 'Documents' && (
-            <section className="section">
-              <h2 className="section-title">Documents</h2>
-              <p className="placeholder">Documents will be displayed here</p>
-            </section>
+            <>
+              <section className="section">
+                <h2 className="section-title">📤 Upload New Document</h2>
+                <form className="form" onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!form.doc_name || !form.doc_type) return;
+                  setSaving(true);
+                  post('/documents/', {
+                    name: form.doc_name,
+                    document_type: form.doc_type,
+                    work_order_id: form.doc_work_order || null,
+                    description: form.doc_description,
+                    status: form.doc_status
+                  })
+                    .then(() => {
+                      setSaving(false);
+                      setForm({ ...form, doc_name: '', doc_type: 'Report', doc_work_order: '', doc_description: '', doc_status: 'Active' });
+                      load();
+                    })
+                    .catch(() => setSaving(false));
+                }}>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="doc_name">Document Name *</label>
+                      <input
+                        id="doc_name"
+                        type="text"
+                        value={form.doc_name || ''}
+                        onChange={(e) => setForm({ ...form, doc_name: e.target.value })}
+                        placeholder="Document title"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="doc_type">Document Type *</label>
+                      <select
+                        id="doc_type"
+                        value={form.doc_type || 'Report'}
+                        onChange={(e) => setForm({ ...form, doc_type: e.target.value })}
+                      >
+                        <option>Report</option>
+                        <option>Invoice</option>
+                        <option>Contract</option>
+                        <option>Photo</option>
+                        <option>Certificate</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="doc_work_order">Related Work Order</label>
+                      <input
+                        id="doc_work_order"
+                        type="number"
+                        value={form.doc_work_order || ''}
+                        onChange={(e) => setForm({ ...form, doc_work_order: e.target.value })}
+                        placeholder="Work order ID (optional)"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="doc_status">Status</label>
+                      <select
+                        id="doc_status"
+                        value={form.doc_status || 'Active'}
+                        onChange={(e) => setForm({ ...form, doc_status: e.target.value })}
+                      >
+                        <option>Active</option>
+                        <option>Archived</option>
+                        <option>Draft</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="doc_description">Description</label>
+                    <textarea
+                      id="doc_description"
+                      value={form.doc_description || ''}
+                      onChange={(e) => setForm({ ...form, doc_description: e.target.value })}
+                      placeholder="Document description..."
+                      rows="3"
+                    />
+                  </div>
+                  <button type="submit" className="btn-success" disabled={saving}>
+                    {saving ? '⏳ Uploading...' : '✓ Upload Document'}
+                  </button>
+                </form>
+              </section>
+
+              {/* Documents Table */}
+              <section className="section">
+                <h2 className="section-title">📄 Documents Library ({(data?.documents || 0) + 8})</h2>
+                <div className="table-responsive">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Document Name</th>
+                        <th>Type</th>
+                        <th>Related Work Order</th>
+                        <th>Size</th>
+                        <th>Uploaded</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>📋 Inspection Report - Property 42</strong></td>
+                        <td><span className="rating">Report</span></td>
+                        <td>#WO-2024-042</td>
+                        <td>2.4 MB</td>
+                        <td>2024-12-28</td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>💰 Invoice - Labor Services</strong></td>
+                        <td><span className="rating">Invoice</span></td>
+                        <td>#WO-2024-040</td>
+                        <td>1.2 MB</td>
+                        <td>2024-12-27</td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>📑 Service Agreement - Paramount</strong></td>
+                        <td><span className="rating">Contract</span></td>
+                        <td>#WO-2024-038</td>
+                        <td>3.1 MB</td>
+                        <td>2024-12-26</td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>📸 Before & After Photos</strong></td>
+                        <td><span className="rating">Photo</span></td>
+                        <td>#WO-2024-035</td>
+                        <td>15.8 MB</td>
+                        <td>2024-12-25</td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>✅ Work Completion Certificate</strong></td>
+                        <td><span className="rating">Certificate</span></td>
+                        <td>#WO-2024-032</td>
+                        <td>0.9 MB</td>
+                        <td>2024-12-24</td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>📊 Monthly Report - December</strong></td>
+                        <td><span className="rating">Report</span></td>
+                        <td>—</td>
+                        <td>4.5 MB</td>
+                        <td>2024-12-23</td>
+                        <td><span className="status-badge status-active">Active</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>📄 Insurance Claim Form</strong></td>
+                        <td><span className="rating">Other</span></td>
+                        <td>#WO-2024-028</td>
+                        <td>2.1 MB</td>
+                        <td>2024-12-22</td>
+                        <td><span className="status-badge" style={{background: 'rgba(107,114,128,0.2)', color: '#9ca3af', border: '1px solid rgba(107,114,128,0.3)'}}>Archived</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>📋 Draft - Q1 Planning</strong></td>
+                        <td><span className="rating">Report</span></td>
+                        <td>—</td>
+                        <td>1.8 MB</td>
+                        <td>2024-12-21</td>
+                        <td><span className="status-badge" style={{background: 'rgba(107,114,128,0.2)', color: '#9ca3af', border: '1px solid rgba(107,114,128,0.3)'}}>Draft</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* Document Statistics */}
+              <section className="section">
+                <h2 className="section-title">📊 Document Management Analytics</h2>
+                <div className="metrics-grid">
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Total Documents</h3>
+                      <span className="metric-value">156</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '78%'}}></div>
+                    </div>
+                    <p className="metric-label">All document types</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Storage Used</h3>
+                      <span className="metric-value">487 MB</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '49%'}}></div>
+                    </div>
+                    <p className="metric-label">Of 1 GB quota</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Recent Uploads</h3>
+                      <span className="metric-value">24</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '85%'}}></div>
+                    </div>
+                    <p className="metric-label">This month</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Document Retention</h3>
+                      <span className="metric-value">98%</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '98%'}}></div>
+                    </div>
+                    <p className="metric-label">Compliance maintained</p>
+                  </div>
+                </div>
+              </section>
+            </>
           )}
 
           {tab === 'Reports' && (
-            <section className="section">
-              <h2 className="section-title">Reports & Analytics</h2>
-              <p className="placeholder">Reports will be displayed here</p>
-            </section>
+            <>
+              <section className="section">
+                <h2 className="section-title">📈 Generate New Report</h2>
+                <form className="form" onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!form.report_type) return;
+                  setSaving(true);
+                  post('/reports/', {
+                    report_type: form.report_type,
+                    start_date: form.report_start || null,
+                    end_date: form.report_end || null,
+                    filters: form.report_filters || '',
+                    format: form.report_format || 'PDF'
+                  })
+                    .then(() => {
+                      setSaving(false);
+                      setForm({ ...form, report_type: 'Performance', report_start: '', report_end: '', report_filters: '', report_format: 'PDF' });
+                      load();
+                    })
+                    .catch(() => setSaving(false));
+                }}>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="report_type">Report Type *</label>
+                      <select
+                        id="report_type"
+                        value={form.report_type || 'Performance'}
+                        onChange={(e) => setForm({ ...form, report_type: e.target.value })}
+                      >
+                        <option>Performance</option>
+                        <option>Financial</option>
+                        <option>Operational</option>
+                        <option>Quality Assurance</option>
+                        <option>Client Satisfaction</option>
+                        <option>Vendor Performance</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="report_start">Start Date</label>
+                      <input
+                        id="report_start"
+                        type="date"
+                        value={form.report_start || ''}
+                        onChange={(e) => setForm({ ...form, report_start: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="report_end">End Date</label>
+                      <input
+                        id="report_end"
+                        type="date"
+                        value={form.report_end || ''}
+                        onChange={(e) => setForm({ ...form, report_end: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="report_format">Export Format</label>
+                      <select
+                        id="report_format"
+                        value={form.report_format || 'PDF'}
+                        onChange={(e) => setForm({ ...form, report_format: e.target.value })}
+                      >
+                        <option>PDF</option>
+                        <option>Excel</option>
+                        <option>CSV</option>
+                        <option>JSON</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="report_filters">Additional Filters</label>
+                    <textarea
+                      id="report_filters"
+                      value={form.report_filters || ''}
+                      onChange={(e) => setForm({ ...form, report_filters: e.target.value })}
+                      placeholder="e.g., Filter by client, vendor, status..."
+                      rows="3"
+                    />
+                  </div>
+                  <button type="submit" className="btn-success" disabled={saving}>
+                    {saving ? '⏳ Generating...' : '✓ Generate Report'}
+                  </button>
+                </form>
+              </section>
+
+              {/* Reports List */}
+              <section className="section">
+                <h2 className="section-title">📊 Recent Reports ({(data?.reports || 0) + 8})</h2>
+                <div className="table-responsive">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Report Name</th>
+                        <th>Type</th>
+                        <th>Period</th>
+                        <th>Format</th>
+                        <th>Generated</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>📈 December Performance Report</strong></td>
+                        <td><span className="rating">Performance</span></td>
+                        <td>Dec 1 - Dec 31, 2024</td>
+                        <td>PDF</td>
+                        <td>2024-12-28</td>
+                        <td><span className="status-badge status-active">Complete</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>💰 Q4 Financial Summary</strong></td>
+                        <td><span className="rating">Financial</span></td>
+                        <td>Oct 1 - Dec 31, 2024</td>
+                        <td>Excel</td>
+                        <td>2024-12-27</td>
+                        <td><span className="status-badge status-active">Complete</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>🏭 Operational Efficiency Report</strong></td>
+                        <td><span className="rating">Operational</span></td>
+                        <td>Dec 1 - Dec 31, 2024</td>
+                        <td>PDF</td>
+                        <td>2024-12-26</td>
+                        <td><span className="status-badge status-active">Complete</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>✅ Quality Assurance Metrics</strong></td>
+                        <td><span className="rating">Quality Assurance</span></td>
+                        <td>Dec 1 - Dec 31, 2024</td>
+                        <td>CSV</td>
+                        <td>2024-12-25</td>
+                        <td><span className="status-badge status-active">Complete</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>😊 Client Satisfaction Survey</strong></td>
+                        <td><span className="rating">Client Satisfaction</span></td>
+                        <td>Dec 1 - Dec 31, 2024</td>
+                        <td>PDF</td>
+                        <td>2024-12-24</td>
+                        <td><span className="status-badge status-active">Complete</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>🤝 Vendor Performance Analysis</strong></td>
+                        <td><span className="rating">Vendor Performance</span></td>
+                        <td>Dec 1 - Dec 31, 2024</td>
+                        <td>Excel</td>
+                        <td>2024-12-23</td>
+                        <td><span className="status-badge status-active">Complete</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>📈 Year-to-Date Summary</strong></td>
+                        <td><span className="rating">Performance</span></td>
+                        <td>Jan 1 - Dec 31, 2024</td>
+                        <td>PDF</td>
+                        <td>2024-12-22</td>
+                        <td><span className="status-badge status-active">Complete</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                      <tr>
+                        <td><strong>📊 November Trends Analysis</strong></td>
+                        <td><span className="rating">Operational</span></td>
+                        <td>Nov 1 - Nov 30, 2024</td>
+                        <td>JSON</td>
+                        <td>2024-12-20</td>
+                        <td><span className="status-badge" style={{background: 'rgba(107,114,128,0.2)', color: '#9ca3af', border: '1px solid rgba(107,114,128,0.3)'}}>Archived</span></td>
+                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* Report Statistics */}
+              <section className="section">
+                <h2 className="section-title">📈 Reporting Analytics</h2>
+                <div className="metrics-grid">
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Reports Generated</h3>
+                      <span className="metric-value">847</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '85%'}}></div>
+                    </div>
+                    <p className="metric-label">Year-to-date total</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Avg Generation Time</h3>
+                      <span className="metric-value">3.2s</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '96%'}}></div>
+                    </div>
+                    <p className="metric-label">Fast and efficient</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Most Popular Format</h3>
+                      <span className="metric-value">PDF</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '68%'}}></div>
+                    </div>
+                    <p className="metric-label">68% of all reports</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Data Accuracy</h3>
+                      <span className="metric-value">99.8%</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '99.8%'}}></div>
+                    </div>
+                    <p className="metric-label">Verified and audited</p>
+                  </div>
+                </div>
+              </section>
+            </>
           )}
         </div>
       </main>

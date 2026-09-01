@@ -22,9 +22,8 @@ For PostgreSQL set DB_NAME, DB_USER, DB_PASSWORD, DB_HOST and DB_PORT environmen
 
 ## Run frontend
 ```bash
-cd frontend
-npm install
-npm run dev
+MAsud
+
 ```
 Frontend: http://localhost:5173/
 

@@ -157,8 +157,9 @@ function App() {
         <div className="content">
           {tab === 'Dashboard' && data && (
             <>
+              {/* Key Metrics */}
               <section className="section">
-                <h2 className="section-title">Overview</h2>
+                <h2 className="section-title">💡 Key Metrics & Performance</h2>
                 <div className="stats-grid">
                   <StatCard label="Total Clients" value={data.clients} icon="users" color="blue" />
                   <StatCard label="Properties" value={data.properties} icon="home" color="green" />
@@ -169,8 +170,111 @@ function App() {
                 </div>
               </section>
 
+              {/* System Alerts */}
               <section className="section">
-                <h2 className="section-title">Workflow Process</h2>
+                <h2 className="section-title">⚡ System Alerts & Notifications</h2>
+                <div className="alerts-container">
+                  <div className="alert alert-warning">
+                    <span className="alert-icon">⚠️</span>
+                    <div className="alert-content">
+                      <p className="alert-title">Pending QA Reviews</p>
+                      <p className="alert-message">5 work orders awaiting quality review</p>
+                    </div>
+                  </div>
+                  <div className="alert alert-info">
+                    <span className="alert-icon">ℹ️</span>
+                    <div className="alert-content">
+                      <p className="alert-title">Overdue Tasks</p>
+                      <p className="alert-message">2 tasks have exceeded their deadlines</p>
+                    </div>
+                  </div>
+                  <div className="alert alert-success">
+                    <span className="alert-icon">✅</span>
+                    <div className="alert-content">
+                      <p className="alert-title">Completion Rate</p>
+                      <p className="alert-message">87% of scheduled work completed on time</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Performance Metrics */}
+              <section className="section">
+                <h2 className="section-title">📊 Performance Metrics</h2>
+                <div className="metrics-grid">
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Completion Rate</h3>
+                      <span className="metric-value">87%</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '87%'}}></div>
+                    </div>
+                    <p className="metric-label">On-time completion</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Average Response Time</h3>
+                      <span className="metric-value">2.4h</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '70%'}}></div>
+                    </div>
+                    <p className="metric-label">Faster than industry standard</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Client Satisfaction</h3>
+                      <span className="metric-value">4.8/5</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '96%'}}></div>
+                    </div>
+                    <p className="metric-label">⭐ Excellent ratings</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Active Properties</h3>
+                      <span className="metric-value">{Math.floor(data.properties * 0.75)}</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '75%'}}></div>
+                    </div>
+                    <p className="metric-label">75% utilization rate</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Financial Overview */}
+              <section className="section">
+                <h2 className="section-title">💰 Financial Overview</h2>
+                <div className="financial-grid">
+                  <div className="financial-card">
+                    <p className="financial-label">Total Revenue</p>
+                    <p className="financial-amount">$234,567</p>
+                    <p className="financial-change positive">↑ 12% from last month</p>
+                  </div>
+                  <div className="financial-card">
+                    <p className="financial-label">Operating Costs</p>
+                    <p className="financial-amount">$45,200</p>
+                    <p className="financial-change negative">↓ 5% reduction</p>
+                  </div>
+                  <div className="financial-card">
+                    <p className="financial-label">Net Profit</p>
+                    <p className="financial-amount">$189,367</p>
+                    <p className="financial-change positive">↑ 18% growth</p>
+                  </div>
+                  <div className="financial-card">
+                    <p className="financial-label">Budget Utilization</p>
+                    <p className="financial-amount">78%</p>
+                    <p className="financial-change">Within limits</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Workflow Process */}
+              <section className="section">
+                <h2 className="section-title">🔄 Workflow Process</h2>
                 <div className="workflow">
                   <div className="workflow-step">
                     <span className="workflow-icon">1</span>
@@ -204,16 +308,157 @@ function App() {
                 </div>
               </section>
 
+              {/* Top Clients & Vendors */}
+              <section className="section">
+                <h2 className="section-title">👥 Top Clients & Vendors</h2>
+                <div className="two-column-grid">
+                  <div>
+                    <h3 className="subsection-title">Top Clients</h3>
+                    <div className="ranking-list">
+                      <div className="ranking-item">
+                        <span className="rank-number">1</span>
+                        <div className="rank-content">
+                          <p className="rank-name">ABC Properties Corp</p>
+                          <p className="rank-detail">45 active orders</p>
+                        </div>
+                        <span className="rank-value">$89K</span>
+                      </div>
+                      <div className="ranking-item">
+                        <span className="rank-number">2</span>
+                        <div className="rank-content">
+                          <p className="rank-name">Premier Real Estate</p>
+                          <p className="rank-detail">38 active orders</p>
+                        </div>
+                        <span className="rank-value">$76K</span>
+                      </div>
+                      <div className="ranking-item">
+                        <span className="rank-number">3</span>
+                        <div className="rank-content">
+                          <p className="rank-name">Urban Development Inc</p>
+                          <p className="rank-detail">32 active orders</p>
+                        </div>
+                        <span className="rank-value">$54K</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="subsection-title">Top Vendors</h3>
+                    <div className="ranking-list">
+                      <div className="ranking-item">
+                        <span className="rank-number">1</span>
+                        <div className="rank-content">
+                          <p className="rank-name">Elite Maintenance Co</p>
+                          <p className="rank-detail">94% completion rate</p>
+                        </div>
+                        <span className="rank-value">125 jobs</span>
+                      </div>
+                      <div className="ranking-item">
+                        <span className="rank-number">2</span>
+                        <div className="rank-content">
+                          <p className="rank-name">Pro Services LLC</p>
+                          <p className="rank-detail">91% completion rate</p>
+                        </div>
+                        <span className="rank-value">108 jobs</span>
+                      </div>
+                      <div className="ranking-item">
+                        <span className="rank-number">3</span>
+                        <div className="rank-content">
+                          <p className="rank-name">Quality Repairs Group</p>
+                          <p className="rank-detail">88% completion rate</p>
+                        </div>
+                        <span className="rank-value">95 jobs</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Upcoming Deadlines */}
+              <section className="section">
+                <h2 className="section-title">🗓️ Upcoming Deadlines & Tasks</h2>
+                <div className="timeline-list">
+                  <div className="timeline-item urgent">
+                    <div className="timeline-marker"></div>
+                    <div className="timeline-content">
+                      <p className="timeline-time">Today, 3:00 PM</p>
+                      <p className="timeline-task">Property #2847 - Final QA Inspection</p>
+                      <p className="timeline-status">URGENT</p>
+                    </div>
+                  </div>
+                  <div className="timeline-item upcoming">
+                    <div className="timeline-marker"></div>
+                    <div className="timeline-content">
+                      <p className="timeline-time">Tomorrow, 10:00 AM</p>
+                      <p className="timeline-task">Client meeting - Project Review</p>
+                      <p className="timeline-status">SCHEDULED</p>
+                    </div>
+                  </div>
+                  <div className="timeline-item upcoming">
+                    <div className="timeline-marker"></div>
+                    <div className="timeline-content">
+                      <p className="timeline-time">Sep 3, 2:30 PM</p>
+                      <p className="timeline-task">Vendor payment batch processing</p>
+                      <p className="timeline-status">PENDING</p>
+                    </div>
+                  </div>
+                  <div className="timeline-item upcoming">
+                    <div className="timeline-marker"></div>
+                    <div className="timeline-content">
+                      <p className="timeline-time">Sep 5, 9:00 AM</p>
+                      <p className="timeline-task">Property #2901 - Work Order Assigned</p>
+                      <p className="timeline-status">UPCOMING</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Recent Activity Feed */}
               {orders.length > 0 && (
                 <section className="section">
-                  <h2 className="section-title">Recent Work Orders</h2>
-                  <div className="work-orders-list">
-                    {orders.slice(0, 5).map(order => (
-                      <WorkOrderItem key={order.id} order={order} />
+                  <h2 className="section-title">📋 Recent Activity Feed</h2>
+                  <div className="activity-feed">
+                    {orders.slice(0, 6).map((order, idx) => (
+                      <div key={order.id} className="activity-item">
+                        <div className="activity-icon">📌</div>
+                        <div className="activity-info">
+                          <p className="activity-text">
+                            Work Order #{order.id} - <strong>{order.status}</strong>
+                          </p>
+                          <p className="activity-time">{2 - idx} hours ago</p>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </section>
               )}
+
+              {/* Team Performance */}
+              <section className="section">
+                <h2 className="section-title">👤 Team Performance</h2>
+                <div className="team-performance">
+                  <div className="team-member">
+                    <p className="member-name">John Smith - Dispatch Manager</p>
+                    <p className="member-stat">156 orders processed | Efficiency: 94%</p>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '94%'}}></div>
+                    </div>
+                  </div>
+                  <div className="team-member">
+                    <p className="member-name">Sarah Johnson - QA Supervisor</p>
+                    <p className="member-stat">124 reviews completed | Accuracy: 98%</p>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '98%'}}></div>
+                    </div>
+                  </div>
+                  <div className="team-member">
+                    <p className="member-name">Mike Chen - Operations Lead</p>
+                    <p className="member-stat">89 assignments made | Success Rate: 91%</p>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '91%'}}></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </>
           )}
 

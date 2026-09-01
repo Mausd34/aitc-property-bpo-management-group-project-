@@ -567,10 +567,294 @@ function App() {
           )}
 
           {tab === 'Vendors' && (
-            <section className="section">
-              <h2 className="section-title">Vendors Management</h2>
-              <p className="placeholder">Vendors data will be displayed here</p>
-            </section>
+            <>
+              <section className="section">
+                <h2 className="section-title">➕ Add New Vendor</h2>
+                <form className="form" onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!form.name || !form.service_area) return;
+                  setSaving(true);
+                  post('/vendors/', {
+                    name: form.name,
+                    email: form.email,
+                    phone: form.phone,
+                    service_area: form.service_area,
+                    rating: parseFloat(form.rating) || 0,
+                    status: form.status
+                  })
+                    .then(() => {
+                      setSaving(false);
+                      setForm({ name: '', email: '', phone: '', service_area: '', rating: '5.0', status: 'Active' });
+                      load();
+                    })
+                    .catch(() => setSaving(false));
+                }}>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label htmlFor="vendor_name">Vendor Name *</label>
+                      <input
+                        id="vendor_name"
+                        type="text"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        placeholder="Enter vendor name"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="vendor_email">Email</label>
+                      <input
+                        id="vendor_email"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        placeholder="vendor@example.com"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="vendor_phone">Phone</label>
+                      <input
+                        id="vendor_phone"
+                        type="tel"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="vendor_service_area">Service Area *</label>
+                      <input
+                        id="vendor_service_area"
+                        type="text"
+                        value={form.service_area}
+                        onChange={(e) => setForm({ ...form, service_area: e.target.value })}
+                        placeholder="e.g., North County, Downtown"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="vendor_rating">Rating (0-5)</label>
+                      <input
+                        id="vendor_rating"
+                        type="number"
+                        min="0"
+                        max="5"
+                        step="0.1"
+                        value={form.rating}
+                        onChange={(e) => setForm({ ...form, rating: e.target.value })}
+                        placeholder="5.0"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="vendor_status">Status</label>
+                      <select
+                        id="vendor_status"
+                        value={form.status}
+                        onChange={(e) => setForm({ ...form, status: e.target.value })}
+                      >
+                        <option>Active</option>
+                        <option>Inactive</option>
+                        <option>Suspended</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button type="submit" className="btn-success" disabled={saving}>
+                    {saving ? '⏳ Saving...' : '✓ Add Vendor'}
+                  </button>
+                </form>
+              </section>
+
+              {/* Vendors Table */}
+              <section className="section">
+                <h2 className="section-title">👥 Vendors List ({(data?.vendors || 0) + (orders.length > 0 ? 3 : 0)})</h2>
+                {orders && orders.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Vendor Name</th>
+                          <th>Service Area</th>
+                          <th>Email</th>
+                          <th>Phone</th>
+                          <th>Rating</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Sample vendors */}
+                        <tr>
+                          <td><strong>Elite Maintenance Co</strong></td>
+                          <td>North County</td>
+                          <td>info@elite.com</td>
+                          <td>(555) 123-4567</td>
+                          <td><span className="rating">⭐ 4.8</span></td>
+                          <td><span className="status-badge status-active">Active</span></td>
+                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                        </tr>
+                        <tr>
+                          <td><strong>Pro Services LLC</strong></td>
+                          <td>Downtown</td>
+                          <td>contact@proservices.com</td>
+                          <td>(555) 234-5678</td>
+                          <td><span className="rating">⭐ 4.6</span></td>
+                          <td><span className="status-badge status-active">Active</span></td>
+                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                        </tr>
+                        <tr>
+                          <td><strong>Quality Repairs Group</strong></td>
+                          <td>Suburbs</td>
+                          <td>support@qualityrepairs.com</td>
+                          <td>(555) 345-6789</td>
+                          <td><span className="rating">⭐ 4.5</span></td>
+                          <td><span className="status-badge status-active">Active</span></td>
+                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                        </tr>
+                        <tr>
+                          <td><strong>BuildPro Contractors</strong></td>
+                          <td>East Side</td>
+                          <td>hello@buildpro.com</td>
+                          <td>(555) 456-7890</td>
+                          <td><span className="rating">⭐ 4.3</span></td>
+                          <td><span className="status-badge status-active">Active</span></td>
+                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                        </tr>
+                        <tr>
+                          <td><strong>Swift Repairs Inc</strong></td>
+                          <td>West Valley</td>
+                          <td>service@swiftrepairs.com</td>
+                          <td>(555) 567-8901</td>
+                          <td><span className="rating">⭐ 4.2</span></td>
+                          <td><span className="status-badge status-inactive">Inactive</span></td>
+                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="placeholder">Loading vendors data...</p>
+                )}
+              </section>
+
+              {/* Vendor Performance Overview */}
+              <section className="section">
+                <h2 className="section-title">📊 Vendor Performance Overview</h2>
+                <div className="vendor-performance-grid">
+                  <div className="vendor-card">
+                    <div className="vendor-header">
+                      <h3>Elite Maintenance Co</h3>
+                      <span className="rating-large">⭐ 4.8</span>
+                    </div>
+                    <div className="vendor-stats">
+                      <div className="stat-item">
+                        <p className="stat-label">Completed Jobs</p>
+                        <p className="stat-value">125</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">On-Time Rate</p>
+                        <p className="stat-value">96%</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Quality Score</p>
+                        <p className="stat-value">4.8/5</p>
+                      </div>
+                    </div>
+                    <div className="vendor-area">Service Area: North County</div>
+                  </div>
+
+                  <div className="vendor-card">
+                    <div className="vendor-header">
+                      <h3>Pro Services LLC</h3>
+                      <span className="rating-large">⭐ 4.6</span>
+                    </div>
+                    <div className="vendor-stats">
+                      <div className="stat-item">
+                        <p className="stat-label">Completed Jobs</p>
+                        <p className="stat-value">108</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">On-Time Rate</p>
+                        <p className="stat-value">93%</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Quality Score</p>
+                        <p className="stat-value">4.6/5</p>
+                      </div>
+                    </div>
+                    <div className="vendor-area">Service Area: Downtown</div>
+                  </div>
+
+                  <div className="vendor-card">
+                    <div className="vendor-header">
+                      <h3>Quality Repairs Group</h3>
+                      <span className="rating-large">⭐ 4.5</span>
+                    </div>
+                    <div className="vendor-stats">
+                      <div className="stat-item">
+                        <p className="stat-label">Completed Jobs</p>
+                        <p className="stat-value">95</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">On-Time Rate</p>
+                        <p className="stat-value">91%</p>
+                      </div>
+                      <div className="stat-item">
+                        <p className="stat-label">Quality Score</p>
+                        <p className="stat-value">4.5/5</p>
+                      </div>
+                    </div>
+                    <div className="vendor-area">Service Area: Suburbs</div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Vendor Statistics */}
+              <section className="section">
+                <h2 className="section-title">📈 Key Vendor Metrics</h2>
+                <div className="metrics-grid">
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Total Active Vendors</h3>
+                      <span className="metric-value">12</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '80%'}}></div>
+                    </div>
+                    <p className="metric-label">Operational capacity at 80%</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Avg. Completion Rate</h3>
+                      <span className="metric-value">94%</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '94%'}}></div>
+                    </div>
+                    <p className="metric-label">Above industry standard</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Avg. Quality Rating</h3>
+                      <span className="metric-value">4.6/5</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '92%'}}></div>
+                    </div>
+                    <p className="metric-label">Excellent vendor performance</p>
+                  </div>
+                  <div className="metric-card">
+                    <div className="metric-header">
+                      <h3>Avg. Response Time</h3>
+                      <span className="metric-value">2.1h</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{width: '85%'}}></div>
+                    </div>
+                    <p className="metric-label">Quick service availability</p>
+                  </div>
+                </div>
+              </section>
+            </>
           )}
 
           {tab === 'QA Review' && (

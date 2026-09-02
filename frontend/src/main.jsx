@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 
-const API = 'http://127.0.0.1:8000/api';
+const API = 'https://aitc-property-bpo-management-group.onrender.com/api';
 const get = (p) => fetch(API + p).then(r => r.json());
 const post = (p, data) => fetch(API + p, {
   method: 'POST',
@@ -10,7 +10,7 @@ const post = (p, data) => fetch(API + p, {
   body: JSON.stringify(data)
 }).then(r => r.json());
 
-const getImage = (image) => image ? `http://127.0.0.1:8000${image}` : 'https://placehold.co/600x400/edf3fb/10233f?text=Property+Image';
+const getImage = (image) => image ? `https://aitc-property-bpo-management-group.onrender.com${image}` : 'https://placehold.co/600x400/edf3fb/10233f?text=Property+Image';
 
 // Icon components
 const Icon = ({ name }) => {

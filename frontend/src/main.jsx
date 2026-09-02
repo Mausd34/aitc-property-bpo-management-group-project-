@@ -66,8 +66,124 @@ const WorkOrderItem = ({ order }) => (
   </div>
 );
 
+// Login Component
+function LoginPage({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError('Please enter email and password');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    
+    setLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setLoading(false);
+      onLogin({ email, name: email.split('@')[0] });
+    }, 1000);
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-wrapper">
+        {/* Left Side - Branding */}
+        <div className="login-branding">
+          <div className="login-logo">📋</div>
+          <h1>AITC BPO</h1>
+          <p className="login-tagline">Property Preservation & Management System</p>
+          <div className="login-features">
+            <div className="feature-item">
+              <span className="feature-icon">✓</span>
+              <p>Complete Property Management</p>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon">✓</span>
+              <p>Real-time Work Order Tracking</p>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon">✓</span>
+              <p>Professional Analytics & Reports</p>
+            </div>
+            <div className="feature-item">
+              <span className="feature-icon">✓</span>
+              <p>Team Performance Monitoring</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="login-form-container">
+          <div className="login-form-box">
+            <h2>Welcome Back</h2>
+            <p className="login-subtitle">Sign in to your account</p>
+
+            <form onSubmit={handleSubmit} className="login-form">
+              <div className="form-group">
+                <label htmlFor="email">Email Address</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="admin@aitcbpo.com"
+                  className="login-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="••••••••"
+                  className="login-input"
+                />
+              </div>
+
+              {error && <div className="login-error">{error}</div>}
+
+              <button type="submit" className="login-button" disabled={loading}>
+                {loading ? '🔄 Signing In...' : '🔐 Sign In'}
+              </button>
+            </form>
+
+            <div className="login-footer">
+              <p className="demo-info">Demo Credentials:</p>
+              <p className="demo-text">Email: demo@aitcbpo.com</p>
+              <p className="demo-text">Password: demo1234</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main App Component
 function App() {
+  const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [data, setData] = useState(null);
   const [orders, setOrders] = useState([]);
   const [properties, setProperties] = useState([]);
@@ -78,6 +194,27 @@ function App() {
     details: '', status: 'Active'
   });
   const [saving, setSaving] = useState(false);
+
+  const handleLogin = (userData) => {
+    setAuthenticated(true);
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setAuthenticated(false);
+    setUser(null);
+    localStorage.removeItem('user');
+  };
+
+  // Check for existing session
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+      setAuthenticated(true);
+    }
+  }, []);
 
   // Default sample data for demonstration
   const defaultData = {
@@ -141,7 +278,7 @@ function App() {
     { name: 'Reports', icon: 'chart' }
   ];
 
-  return (
+  return authenticated ? (
     <div className="app">
       <aside className="sidebar">
         <div className="sidebar-header">
@@ -171,9 +308,15 @@ function App() {
             <h1>{tab}</h1>
             <p>Property Preservation & BPO Management System</p>
           </div>
-          <button className="btn-primary" onClick={load}>
-            🔄 Refresh
-          </button>
+          <div className="header-actions">
+            <span className="user-info">👤 {user?.name || 'User'}</span>
+            <button className="btn-logout" onClick={handleLogout}>
+              🚪 Logout
+            </button>
+            <button className="btn-primary" onClick={load}>
+              🔄 Refresh
+            </button>
+          </div>
         </header>
 
         <div className="content">
@@ -1808,6 +1951,8 @@ function App() {
         </div>
       </main>
     </div>
+  ) : (
+    <LoginPage onLogin={handleLogin} />
   );
 }
 

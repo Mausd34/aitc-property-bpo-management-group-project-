@@ -1,5 +1,5 @@
 # American IT Centre Property Preservation & BPO Management System
-https://aitc-property-bpo-management-group.onrender.com (live link)
+https://aitc-property-bpo-management-group-7r88.onrender.com/ (live link)
 
 ## Stack
 - Python / Django / Django REST Framework

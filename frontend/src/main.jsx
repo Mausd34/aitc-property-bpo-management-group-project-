@@ -541,6 +541,12 @@ function App() {
   };
 
   const handleClientDelete = (id) => {
+    if (properties.some(property => property.client === id) || orders.some(order => order.client === id)) {
+      setClientMessage({ type: 'error', text: 'This client cannot be deleted while it has linked properties or work orders.' });
+      return;
+    }
+    const client = clients.find(item => item.id === id);
+    if (!window.confirm(`Delete client "${client?.name || `#${id}`}"?`)) return;
     remove(`/clients/${id}/`).then(() => {
       setClients(prev => prev.filter(client => client.id !== id));
       setClientMessage({ type: 'success', text: 'Client deleted successfully.' });
@@ -1321,14 +1327,13 @@ function App() {
                       />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="vendor_service_area">Service Area *</label>
+                      <label htmlFor="vendor_service_area">Service Area</label>
                       <input
                         id="vendor_service_area"
                         type="text"
                         value={vendorForm.service_area}
                         onChange={(e) => setVendorForm({ ...vendorForm, service_area: e.target.value })}
                         placeholder="e.g., North County, Downtown"
-                        required
                       />
                     </div>
                     <div className="form-group">

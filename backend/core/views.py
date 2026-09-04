@@ -1,11 +1,26 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.db.models import Count, Q
+from django.db.models import Count
+from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from .models import *
 from .serializers import *
-class ClientViewSet(viewsets.ModelViewSet):
+
+
+class ProtectedDeleteViewSet(viewsets.ModelViewSet):
+ def destroy(self, request, *args, **kwargs):
+  instance = self.get_object()
+  try:
+   self.perform_destroy(instance)
+  except ProtectedError:
+   return Response(
+    {'detail': 'This record is still linked to other records and cannot be deleted.'},
+    status=status.HTTP_409_CONFLICT,
+   )
+  return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ClientViewSet(ProtectedDeleteViewSet):
  queryset=Client.objects.all().order_by('-id'); serializer_class=ClientSerializer
  def create(self, request, *args, **kwargs):
     data=request.data
@@ -13,7 +28,7 @@ class ClientViewSet(viewsets.ModelViewSet):
     if existing:
      return Response(self.get_serializer(existing).data, status=status.HTTP_200_OK)
     return super().create(request, *args, **kwargs)
-class PropertyViewSet(viewsets.ModelViewSet): 
+class PropertyViewSet(ProtectedDeleteViewSet):
     queryset=Property.objects.all().order_by('-id'); 
     serializer_class=PropertySerializer;
     def get_serializer_class(self):
@@ -27,7 +42,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
         if existing:
             return Response(PropertySerializer(existing).data, status=status.HTTP_200_OK)
         return super().create(request, *args, **kwargs)
-class VendorViewSet(viewsets.ModelViewSet):
+class VendorViewSet(ProtectedDeleteViewSet):
  queryset=Vendor.objects.all().order_by('-id'); serializer_class=VendorSerializer
  def create(self, request, *args, **kwargs):
     data=request.data

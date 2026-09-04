@@ -2949,6 +2949,116 @@ tbody tr:hover {
   border-color: rgba(245, 158, 11, 0.42);
 }
 
+/* Shared admin polish */
+.section,
+.metric-card,
+.financial-card,
+.vendor-card,
+.property-card {
+  border-color: rgba(148, 163, 184, 0.22);
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.24);
+}
+
+.section:hover,
+.metric-card:hover,
+.financial-card:hover,
+.vendor-card:hover,
+.property-card:hover {
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+.section-title,
+.subsection-title,
+.data-table th,
+.form-group label {
+  color: #f8fafc;
+}
+
+.data-table th {
+  background: #273449 !important;
+  color: #e2e8f0 !important;
+  border-bottom-color: #475569 !important;
+}
+
+.data-table td {
+  color: #cbd5e1 !important;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  border-color: #475569;
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.18);
+}
+
+.btn-primary,
+.btn-success,
+.btn-secondary,
+.btn-action {
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.btn-primary:focus-visible,
+.btn-success:focus-visible,
+.btn-secondary:focus-visible,
+.btn-action:focus-visible,
+.nav-item:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.status-assigned,
+.status-in-progress,
+.status-completed,
+.status-approved,
+.status-closed,
+.status-new,
+.status-pass,
+.status-conditional-pass,
+.status-fail {
+  display: inline-flex;
+  align-items: center;
+  position: static;
+  box-shadow: none;
+}
+
+.status-assigned,
+.status-in-progress {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.38);
+}
+
+.status-completed,
+.status-approved,
+.status-closed,
+.status-pass {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.38);
+}
+
+.status-new,
+.status-conditional-pass {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.38);
+}
+
+.status-fail {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.38);
+}
+
 /* Keep native dropdown options readable in the dark form theme */
 .form-group select {
   color: #f1f5f9;

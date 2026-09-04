@@ -19,6 +19,14 @@ const post = (p, data) => fetch(API + p, {
   if (!r.ok) throw new Error(body ? JSON.stringify(body) : 'Request failed');
   return body;
 });
+const postForm = (p, data) => fetch(API + p, {
+  method: 'POST',
+  body: data
+}).then(async r => {
+  const body = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(body ? JSON.stringify(body) : 'Request failed');
+  return body;
+});
 const put = (p, data) => fetch(API + p, {
   method: 'PUT',
   headers: { 'Content-Type': 'application/json' },
@@ -477,7 +485,8 @@ function App() {
       name: clientForm.client_name.trim(),
       email: clientForm.client_email.trim(),
       phone: clientForm.client_phone.trim(),
-      address: clientForm.client_address.trim()
+      address: clientForm.client_address.trim(),
+      status: clientForm.client_status
     }).then(savedClient => {
       setClients(prev => [{ ...savedClient, status: clientForm.client_status }, ...prev]);
       setClientMessage({ type: 'success', text: 'Client added successfully.' });
@@ -517,7 +526,8 @@ function App() {
       name: editClientForm.client_name.trim(),
       email: editClientForm.client_email.trim(),
       phone: editClientForm.client_phone.trim(),
-      address: editClientForm.client_address.trim()
+      address: editClientForm.client_address.trim(),
+      status: editClientForm.client_status
     }).then(savedClient => {
       setClients(prev => prev.map(client => client.id === editingClientId
         ? { ...savedClient, status: editClientForm.client_status }
@@ -627,21 +637,21 @@ function App() {
                     <span className="alert-icon">⚠️</span>
                     <div className="alert-content">
                       <p className="alert-title">Pending QA Reviews</p>
-                      <p className="alert-message">5 work orders awaiting quality review</p>
+                      <p className="alert-message">{data.pending_qa_reviews || 0} reviews awaiting attention</p>
                     </div>
                   </div>
                   <div className="alert alert-info">
                     <span className="alert-icon">ℹ️</span>
                     <div className="alert-content">
                       <p className="alert-title">Overdue Tasks</p>
-                      <p className="alert-message">2 tasks have exceeded their deadlines</p>
+                      <p className="alert-message">{data.overdue_work_orders || 0} tasks have exceeded their deadlines</p>
                     </div>
                   </div>
                   <div className="alert alert-success">
                     <span className="alert-icon">✅</span>
                     <div className="alert-content">
                       <p className="alert-title">Completion Rate</p>
-                      <p className="alert-message">87% of scheduled work completed on time</p>
+                      <p className="alert-message">{data.completion_rate || 0}% of tracked work orders completed</p>
                     </div>
                   </div>
                 </div>
@@ -654,10 +664,10 @@ function App() {
                   <div className="metric-card">
                     <div className="metric-header">
                       <h3>Completion Rate</h3>
-                      <span className="metric-value">87%</span>
+                      <span className="metric-value">{data.completion_rate || 0}%</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '87%'}}></div>
+                      <div className="progress-fill" style={{width: `${data.completion_rate || 0}%`}}></div>
                     </div>
                     <p className="metric-label">On-time completion</p>
                   </div>
@@ -687,36 +697,36 @@ function App() {
                       <span className="metric-value">{data.active_properties ?? data.properties}</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '75%'}}></div>
+                      <div className="progress-fill" style={{width: `${data.properties ? Math.round((data.active_properties / data.properties) * 100) : 0}%`}}></div>
                     </div>
-                    <p className="metric-label">75% utilization rate</p>
+                    <p className="metric-label">Active properties</p>
                   </div>
                 </div>
               </section>
 
-              {/* Financial Overview */}
+              {/* Live Record Overview */}
               <section className="section">
-                <h2 className="section-title">💰 Financial Overview</h2>
+                <h2 className="section-title">📦 Live Record Overview</h2>
                 <div className="financial-grid">
                   <div className="financial-card">
-                    <p className="financial-label">Total Revenue</p>
-                    <p className="financial-amount">$234,567</p>
-                    <p className="financial-change positive">↑ 12% from last month</p>
+                    <p className="financial-label">Clients</p>
+                    <p className="financial-amount">{data.clients}</p>
+                    <p className="financial-change">Saved client records</p>
                   </div>
                   <div className="financial-card">
-                    <p className="financial-label">Operating Costs</p>
-                    <p className="financial-amount">$45,200</p>
-                    <p className="financial-change negative">↓ 5% reduction</p>
+                    <p className="financial-label">Properties</p>
+                    <p className="financial-amount">{data.properties}</p>
+                    <p className="financial-change">Linked property records</p>
                   </div>
                   <div className="financial-card">
-                    <p className="financial-label">Net Profit</p>
-                    <p className="financial-amount">$189,367</p>
-                    <p className="financial-change positive">↑ 18% growth</p>
+                    <p className="financial-label">Work Orders</p>
+                    <p className="financial-amount">{data.work_orders}</p>
+                    <p className="financial-change">Tracked operational work</p>
                   </div>
                   <div className="financial-card">
-                    <p className="financial-label">Budget Utilization</p>
-                    <p className="financial-amount">78%</p>
-                    <p className="financial-change">Within limits</p>
+                    <p className="financial-label">Vendors</p>
+                    <p className="financial-amount">{data.vendors}</p>
+                    <p className="financial-change">Reusable vendor records</p>
                   </div>
                 </div>
               </section>
@@ -764,59 +774,31 @@ function App() {
                   <div>
                     <h3 className="subsection-title">Top Clients</h3>
                     <div className="ranking-list">
-                      <div className="ranking-item">
-                        <span className="rank-number">1</span>
-                        <div className="rank-content">
-                          <p className="rank-name">ABC Properties Corp</p>
-                          <p className="rank-detail">45 active orders</p>
+                      {(data.top_clients || []).length === 0 ? <p className="placeholder">No client activity yet.</p> : data.top_clients.map((client, index) => (
+                        <div className="ranking-item" key={client.id}>
+                          <span className="rank-number">{index + 1}</span>
+                          <div className="rank-content">
+                            <p className="rank-name">{client.name}</p>
+                            <p className="rank-detail">{client.order_count} work orders</p>
+                          </div>
+                          <span className="rank-value">#{client.id}</span>
                         </div>
-                        <span className="rank-value">$89K</span>
-                      </div>
-                      <div className="ranking-item">
-                        <span className="rank-number">2</span>
-                        <div className="rank-content">
-                          <p className="rank-name">Premier Real Estate</p>
-                          <p className="rank-detail">38 active orders</p>
-                        </div>
-                        <span className="rank-value">$76K</span>
-                      </div>
-                      <div className="ranking-item">
-                        <span className="rank-number">3</span>
-                        <div className="rank-content">
-                          <p className="rank-name">Urban Development Inc</p>
-                          <p className="rank-detail">32 active orders</p>
-                        </div>
-                        <span className="rank-value">$54K</span>
-                      </div>
+                      ))}
                     </div>
                   </div>
                   <div>
                     <h3 className="subsection-title">Top Vendors</h3>
                     <div className="ranking-list">
-                      <div className="ranking-item">
-                        <span className="rank-number">1</span>
-                        <div className="rank-content">
-                          <p className="rank-name">Elite Maintenance Co</p>
-                          <p className="rank-detail">94% completion rate</p>
+                      {(data.top_vendors || []).length === 0 ? <p className="placeholder">No vendor assignments yet.</p> : data.top_vendors.map((vendor, index) => (
+                        <div className="ranking-item" key={vendor.id}>
+                          <span className="rank-number">{index + 1}</span>
+                          <div className="rank-content">
+                            <p className="rank-name">{vendor.name}</p>
+                            <p className="rank-detail">{vendor.assignment_count} assignments</p>
+                          </div>
+                          <span className="rank-value">#{vendor.id}</span>
                         </div>
-                        <span className="rank-value">125 jobs</span>
-                      </div>
-                      <div className="ranking-item">
-                        <span className="rank-number">2</span>
-                        <div className="rank-content">
-                          <p className="rank-name">Pro Services LLC</p>
-                          <p className="rank-detail">91% completion rate</p>
-                        </div>
-                        <span className="rank-value">108 jobs</span>
-                      </div>
-                      <div className="ranking-item">
-                        <span className="rank-number">3</span>
-                        <div className="rank-content">
-                          <p className="rank-name">Quality Repairs Group</p>
-                          <p className="rank-detail">88% completion rate</p>
-                        </div>
-                        <span className="rank-value">95 jobs</span>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -826,38 +808,17 @@ function App() {
               <section className="section">
                 <h2 className="section-title">🗓️ Upcoming Deadlines & Tasks</h2>
                 <div className="timeline-list">
-                  <div className="timeline-item urgent">
-                    <div className="timeline-marker"></div>
-                    <div className="timeline-content">
-                      <p className="timeline-time">Today, 3:00 PM</p>
-                      <p className="timeline-task">Property #2847 - Final QA Inspection</p>
-                      <p className="timeline-status">URGENT</p>
+                  {orders.filter(order => order.due_date).slice(0, 6).map(order => (
+                    <div className="timeline-item upcoming" key={order.id}>
+                      <div className="timeline-marker"></div>
+                      <div className="timeline-content">
+                        <p className="timeline-time">Due {order.due_date}</p>
+                        <p className="timeline-task">{order.title || `Work Order #${order.id}`}</p>
+                        <p className="timeline-status">{order.status}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="timeline-item upcoming">
-                    <div className="timeline-marker"></div>
-                    <div className="timeline-content">
-                      <p className="timeline-time">Tomorrow, 10:00 AM</p>
-                      <p className="timeline-task">Client meeting - Project Review</p>
-                      <p className="timeline-status">SCHEDULED</p>
-                    </div>
-                  </div>
-                  <div className="timeline-item upcoming">
-                    <div className="timeline-marker"></div>
-                    <div className="timeline-content">
-                      <p className="timeline-time">Sep 3, 2:30 PM</p>
-                      <p className="timeline-task">Vendor payment batch processing</p>
-                      <p className="timeline-status">PENDING</p>
-                    </div>
-                  </div>
-                  <div className="timeline-item upcoming">
-                    <div className="timeline-marker"></div>
-                    <div className="timeline-content">
-                      <p className="timeline-time">Sep 5, 9:00 AM</p>
-                      <p className="timeline-task">Property #2901 - Work Order Assigned</p>
-                      <p className="timeline-status">UPCOMING</p>
-                    </div>
-                  </div>
+                  ))}
+                  {orders.filter(order => order.due_date).length === 0 && <p className="placeholder">No due dates have been assigned.</p>}
                 </div>
               </section>
 
@@ -883,27 +844,27 @@ function App() {
 
               {/* Team Performance */}
               <section className="section">
-                <h2 className="section-title">👤 Team Performance</h2>
+                <h2 className="section-title">👤 Workflow Coverage</h2>
                 <div className="team-performance">
                   <div className="team-member">
-                    <p className="member-name">John Smith - Dispatch Manager</p>
-                    <p className="member-stat">156 orders processed | Efficiency: 94%</p>
+                    <p className="member-name">Client to Property Links</p>
+                    <p className="member-stat">{properties.length} properties linked to {clients.length} clients</p>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '94%'}}></div>
+                      <div className="progress-fill" style={{width: `${clients.length ? Math.min(100, Math.round((properties.length / clients.length) * 100)) : 0}%`}}></div>
                     </div>
                   </div>
                   <div className="team-member">
-                    <p className="member-name">Sarah Johnson - QA Supervisor</p>
-                    <p className="member-stat">124 reviews completed | Accuracy: 98%</p>
+                    <p className="member-name">Work Orders With Vendors</p>
+                    <p className="member-stat">{assignments.length} vendor assignments across {orders.length} work orders</p>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '98%'}}></div>
+                      <div className="progress-fill" style={{width: `${orders.length ? Math.min(100, Math.round((assignments.length / orders.length) * 100)) : 0}%`}}></div>
                     </div>
                   </div>
                   <div className="team-member">
-                    <p className="member-name">Mike Chen - Operations Lead</p>
-                    <p className="member-stat">89 assignments made | Success Rate: 91%</p>
+                    <p className="member-name">QA Review Coverage</p>
+                    <p className="member-stat">{qaReviews.length} reviews for {orders.length} work orders</p>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '91%'}}></div>
+                      <div className="progress-fill" style={{width: `${orders.length ? Math.min(100, Math.round((qaReviews.length / orders.length) * 100)) : 0}%`}}></div>
                     </div>
                   </div>
                 </div>
@@ -1258,73 +1219,27 @@ function App() {
 
               {/* Client Performance */}
               <section className="section">
-                <h2 className="section-title">📊 Top Clients Performance</h2>
+                <h2 className="section-title">📊 Live Client Summary</h2>
                 <div className="vendor-performance-grid">
-                  <div className="vendor-card">
-                    <div className="vendor-header">
-                      <h3>Paramount Real Estate</h3>
-                      <span className="rating-large">⭐ 4.9</span>
+                  {clients.length === 0 ? <p className="placeholder">No clients added yet.</p> : clients.slice(0, 6).map(client => (
+                    <div className="vendor-card" key={client.id}>
+                      <div className="vendor-header">
+                        <h3>#{client.id} - {client.name}</h3>
+                        <span className={`status-badge status-${(client.status || 'Active').toLowerCase()}`}>{client.status || 'Active'}</span>
+                      </div>
+                      <div className="vendor-stats">
+                        <div className="stat-item">
+                          <p className="stat-label">Properties</p>
+                          <p className="stat-value">{propertyCountByClient[String(client.id)] || 0}</p>
+                        </div>
+                        <div className="stat-item">
+                          <p className="stat-label">Work Orders</p>
+                          <p className="stat-value">{orders.filter(order => order.client === client.id).length}</p>
+                        </div>
+                      </div>
+                      <div className="vendor-area">{client.email}</div>
                     </div>
-                    <div className="vendor-stats">
-                      <div className="stat-item">
-                        <p className="stat-label">Active Properties</p>
-                        <p className="stat-value">8</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Total Spend</p>
-                        <p className="stat-value">$125K</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Satisfaction</p>
-                        <p className="stat-value">4.9/5</p>
-                      </div>
-                    </div>
-                    <div className="vendor-area">Partnership since 2020</div>
-                  </div>
-
-                  <div className="vendor-card">
-                    <div className="vendor-header">
-                      <h3>Urban Properties Group</h3>
-                      <span className="rating-large">⭐ 4.7</span>
-                    </div>
-                    <div className="vendor-stats">
-                      <div className="stat-item">
-                        <p className="stat-label">Active Properties</p>
-                        <p className="stat-value">6</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Total Spend</p>
-                        <p className="stat-value">$98K</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Satisfaction</p>
-                        <p className="stat-value">4.7/5</p>
-                      </div>
-                    </div>
-                    <div className="vendor-area">Partnership since 2021</div>
-                  </div>
-
-                  <div className="vendor-card">
-                    <div className="vendor-header">
-                      <h3>Capital Investments LLC</h3>
-                      <span className="rating-large">⭐ 4.8</span>
-                    </div>
-                    <div className="vendor-stats">
-                      <div className="stat-item">
-                        <p className="stat-label">Active Properties</p>
-                        <p className="stat-value">5</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Total Spend</p>
-                        <p className="stat-value">$87K</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Satisfaction</p>
-                        <p className="stat-value">4.8/5</p>
-                      </div>
-                    </div>
-                    <div className="vendor-area">Partnership since 2022</div>
-                  </div>
+                  ))}
                 </div>
               </section>
 
@@ -1344,33 +1259,23 @@ function App() {
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Avg Client Satisfaction</h3>
-                      <span className="metric-value">4.7/5</span>
+                      <h3>Clients With Properties</h3>
+                      <span className="metric-value">{clients.filter(client => propertyCountByClient[String(client.id)]).length}</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '94%'}}></div>
+                      <div className="progress-fill" style={{width: `${clients.length ? Math.round((clients.filter(client => propertyCountByClient[String(client.id)]).length / clients.length) * 100) : 0}%`}}></div>
                     </div>
-                    <p className="metric-label">Excellent retention rate</p>
+                    <p className="metric-label">Linked property coverage</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Monthly Revenue</h3>
-                      <span className="metric-value">$156K</span>
+                      <h3>Client Work Orders</h3>
+                      <span className="metric-value">{orders.length}</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '78%'}}></div>
+                      <div className="progress-fill" style={{width: `${data.work_orders ? Math.min(100, Math.round((orders.length / data.work_orders) * 100)) : 0}%`}}></div>
                     </div>
-                    <p className="metric-label">From active clients</p>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-header">
-                      <h3>Avg Response Time</h3>
-                      <span className="metric-value">1.2h</span>
-                    </div>
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '95%'}}></div>
-                    </div>
-                    <p className="metric-label">Excellent client service</p>
+                    <p className="metric-label">Linked work-order records</p>
                   </div>
                 </div>
               </section>
@@ -1488,58 +1393,27 @@ function App() {
 
               {/* Vendor Performance Overview */}
               <section className="section">
-                <h2 className="section-title">📊 Vendor Performance Overview</h2>
+                <h2 className="section-title">📊 Live Vendor Overview</h2>
                 <div className="vendor-performance-grid">
-                  <div className="vendor-card">
-                    <div className="vendor-header">
-                      <h3>Elite Maintenance Co</h3>
-                    </div>
-                    <div className="vendor-stats">
-                      <div className="stat-item">
-                        <p className="stat-label">Completed Jobs</p>
-                        <p className="stat-value">125</p>
+                  {vendors.length === 0 ? <p className="placeholder">No vendors added yet.</p> : vendors.slice(0, 6).map(vendor => (
+                    <div className="vendor-card" key={vendor.id}>
+                      <div className="vendor-header">
+                        <h3>#{vendor.id} - {vendor.name}</h3>
+                        <span className={`status-badge status-${(vendor.status || 'Active').toLowerCase()}`}>{vendor.status || 'Active'}</span>
                       </div>
-                      <div className="stat-item">
-                        <p className="stat-label">On-Time Rate</p>
-                        <p className="stat-value">96%</p>
+                      <div className="vendor-stats">
+                        <div className="stat-item">
+                          <p className="stat-label">Assignments</p>
+                          <p className="stat-value">{assignments.filter(assignment => assignment.vendor === vendor.id).length}</p>
+                        </div>
+                        <div className="stat-item">
+                          <p className="stat-label">Phone</p>
+                          <p className="stat-value">{vendor.phone || '—'}</p>
+                        </div>
                       </div>
+                      <div className="vendor-area">{vendor.service_area || vendor.email || 'No service details'}</div>
                     </div>
-                    <div className="vendor-area">Service Area: North County</div>
-                  </div>
-
-                  <div className="vendor-card">
-                    <div className="vendor-header">
-                      <h3>Pro Services LLC</h3>
-                    </div>
-                    <div className="vendor-stats">
-                      <div className="stat-item">
-                        <p className="stat-label">Completed Jobs</p>
-                        <p className="stat-value">108</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">On-Time Rate</p>
-                        <p className="stat-value">93%</p>
-                      </div>
-                    </div>
-                    <div className="vendor-area">Service Area: Downtown</div>
-                  </div>
-
-                  <div className="vendor-card">
-                    <div className="vendor-header">
-                      <h3>Quality Repairs Group</h3>
-                    </div>
-                    <div className="vendor-stats">
-                      <div className="stat-item">
-                        <p className="stat-label">Completed Jobs</p>
-                        <p className="stat-value">95</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">On-Time Rate</p>
-                        <p className="stat-value">91%</p>
-                      </div>
-                    </div>
-                    <div className="vendor-area">Service Area: Suburbs</div>
-                  </div>
+                  ))}
                 </div>
               </section>
 
@@ -1559,23 +1433,23 @@ function App() {
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Avg. Completion Rate</h3>
-                      <span className="metric-value">94%</span>
+                      <h3>Assigned Work Orders</h3>
+                      <span className="metric-value">{assignments.length}</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '94%'}}></div>
+                      <div className="progress-fill" style={{width: `${orders.length ? Math.min(100, Math.round((assignments.length / orders.length) * 100)) : 0}%`}}></div>
                     </div>
-                    <p className="metric-label">Above industry standard</p>
+                    <p className="metric-label">Vendor-linked assignments</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Avg. Response Time</h3>
-                      <span className="metric-value">2.1h</span>
+                      <h3>Unassigned Work Orders</h3>
+                      <span className="metric-value">{Math.max(0, orders.length - assignments.length)}</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '85%'}}></div>
+                      <div className="progress-fill" style={{width: `${orders.length ? Math.round((Math.max(0, orders.length - assignments.length) / orders.length) * 100) : 0}%`}}></div>
                     </div>
-                    <p className="metric-label">Quick service availability</p>
+                    <p className="metric-label">Needs vendor assignment</p>
                   </div>
                 </div>
               </section>
@@ -1691,12 +1565,12 @@ function App() {
                   <div className="metric-card">
                     <div className="metric-header">
                       <h3>Pass Rate</h3>
-                      <span className="metric-value">92%</span>
+                      <span className="metric-value">{qaReviews.length ? Math.round((qaReviews.filter(review => ['Pass', 'Approved'].includes(review.status)).length / qaReviews.length) * 100) : 0}%</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '92%'}}></div>
+                      <div className="progress-fill" style={{width: `${qaReviews.length ? Math.round((qaReviews.filter(review => ['Pass', 'Approved'].includes(review.status)).length / qaReviews.length) * 100) : 0}%`}}></div>
                     </div>
-                    <p className="metric-label">First-time passes</p>
+                    <p className="metric-label">Based on saved review statuses</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
@@ -1704,19 +1578,19 @@ function App() {
                       <span className="metric-value">{qaReviews.filter(review => review.status === 'Pending').length}</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '92%'}}></div>
+                      <div className="progress-fill" style={{width: `${qaReviews.length ? Math.round((qaReviews.filter(review => review.status !== 'Pending').length / qaReviews.length) * 100) : 0}%`}}></div>
                     </div>
-                    <p className="metric-label">Consistently excellent</p>
+                    <p className="metric-label">Reviews completed</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Avg Review Time</h3>
-                      <span className="metric-value">1.8h</span>
+                      <h3>Completed Reviews</h3>
+                      <span className="metric-value">{qaReviews.filter(review => review.status !== 'Pending').length}</span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '72%'}}></div>
+                      <div className="progress-fill" style={{width: `${qaReviews.length ? Math.round((qaReviews.filter(review => review.status !== 'Pending').length / qaReviews.length) * 100) : 0}%`}}></div>
                     </div>
-                    <p className="metric-label">Quick turnaround</p>
+                    <p className="metric-label">Non-pending reviews</p>
                   </div>
                 </div>
               </section>
@@ -1729,16 +1603,17 @@ function App() {
                 <h2 className="section-title">📤 Upload New Document</h2>
                 <form className="form" onSubmit={(e) => {
                   e.preventDefault();
-                  if (!form.doc_name || !form.doc_type) return;
+                  if (!form.doc_name || !form.doc_type || !form.doc_work_order) return;
                   setSaving(true);
-                  post('/documents/', {
-                    file_name: form.doc_name,
-                    file_type: form.doc_type,
-                    work_order: Number(form.doc_work_order)
-                  })
+                  const documentData = new FormData();
+                  documentData.append('file_name', form.doc_name);
+                  documentData.append('file_type', form.doc_type);
+                  documentData.append('work_order', Number(form.doc_work_order));
+                  if (form.doc_file) documentData.append('file_path', form.doc_file);
+                  postForm('/documents/', documentData)
                     .then(() => {
                       setSaving(false);
-                      setForm({ ...form, doc_name: '', doc_type: 'Report', doc_work_order: '', doc_description: '', doc_status: 'Active' });
+                      setForm({ ...form, doc_name: '', doc_type: 'Report', doc_work_order: '', doc_file: null });
                       load();
                     })
                     .catch(() => setSaving(false));
@@ -1781,6 +1656,14 @@ function App() {
                         <option value="">Select a work order</option>
                         {orders.map(order => <option key={order.id} value={order.id}>#{order.id} - {order.title || 'Untitled work order'}</option>)}
                       </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="doc_file">File</label>
+                      <input
+                        id="doc_file"
+                        type="file"
+                        onChange={(e) => setForm({ ...form, doc_file: e.target.files?.[0] || null })}
+                      />
                     </div>
                   </div>
                   <button type="submit" className="btn-success" disabled={saving}>
@@ -1838,33 +1721,33 @@ function App() {
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Storage Used</h3>
-                      <span className="metric-value">487 MB</span>
+                      <h3>Files Stored</h3>
+                      <span className="metric-value">{documents.filter(document => document.file_path).length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '49%'}}></div>
                     </div>
-                    <p className="metric-label">Of 1 GB quota</p>
+                    <p className="metric-label">Documents with file paths</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Recent Uploads</h3>
+                      <h3>Linked Documents</h3>
                       <span className="metric-value">{documents.length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '85%'}}></div>
                     </div>
-                    <p className="metric-label">This month</p>
+                      <p className="metric-label">Attached to work orders</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Document Retention</h3>
-                      <span className="metric-value">98%</span>
+                      <h3>Metadata Only</h3>
+                      <span className="metric-value">{documents.filter(document => !document.file_path).length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '98%'}}></div>
                     </div>
-                    <p className="metric-label">Compliance maintained</p>
+                    <p className="metric-label">Records awaiting file upload</p>
                   </div>
                 </div>
               </section>
@@ -1961,33 +1844,33 @@ function App() {
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Avg Generation Time</h3>
-                      <span className="metric-value">3.2s</span>
+                      <h3>Report Types</h3>
+                      <span className="metric-value">{new Set(reports.map(report => report.report_type)).size}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '96%'}}></div>
                     </div>
-                    <p className="metric-label">Fast and efficient</p>
+                    <p className="metric-label">Distinct saved report types</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Most Popular Format</h3>
-                      <span className="metric-value">PDF</span>
+                      <h3>Reports With Files</h3>
+                      <span className="metric-value">{reports.filter(report => report.file_path).length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '68%'}}></div>
                     </div>
-                    <p className="metric-label">68% of all reports</p>
+                      <p className="metric-label">Generated file records</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Data Accuracy</h3>
-                      <span className="metric-value">99.8%</span>
+                      <h3>Reports Pending Files</h3>
+                      <span className="metric-value">{reports.filter(report => !report.file_path).length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '99.8%'}}></div>
                     </div>
-                    <p className="metric-label">Verified and audited</p>
+                    <p className="metric-label">Metadata-only reports</p>
                   </div>
                 </div>
               </section>

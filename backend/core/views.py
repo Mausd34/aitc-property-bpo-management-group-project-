@@ -1,7 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.db.models import Count
+from django.db.models import Count, Q
+from django.utils import timezone
 from .models import *
 from .serializers import *
 class ClientViewSet(viewsets.ModelViewSet):
@@ -49,4 +50,25 @@ class NotificationViewSet(viewsets.ModelViewSet): queryset=Notification.objects.
 class ReportViewSet(viewsets.ModelViewSet): queryset=Report.objects.all().order_by('-id'); serializer_class=ReportSerializer
 @api_view(['GET'])
 def dashboard(request):
- return Response({'clients':Client.objects.count(),'properties':Property.objects.count(),'active_properties':Property.objects.filter(status='Active').count(),'vendors':Vendor.objects.count(),'work_orders':WorkOrder.objects.count(),'qa_reviews':QAReview.objects.count(),'documents':Document.objects.count(),'reports':Report.objects.count(),'unread_notifications':Notification.objects.filter(is_read=False).count(),'work_order_status':list(WorkOrder.objects.values('status').annotate(total=Count('id')))})
+ total_orders=WorkOrder.objects.count()
+ completed_orders=WorkOrder.objects.filter(status__in=['Completed','Approved','Closed']).count()
+ completion_rate=round((completed_orders / total_orders) * 100) if total_orders else 0
+ overdue_orders=WorkOrder.objects.filter(due_date__lt=timezone.localdate()).exclude(status__in=['Completed','Approved','Closed']).count()
+ return Response({
+  'clients':Client.objects.count(),
+  'properties':Property.objects.count(),
+  'active_properties':Property.objects.filter(status='Active').count(),
+  'vendors':Vendor.objects.count(),
+  'work_orders':total_orders,
+  'completed_work_orders':completed_orders,
+  'completion_rate':completion_rate,
+  'overdue_work_orders':overdue_orders,
+  'qa_reviews':QAReview.objects.count(),
+  'pending_qa_reviews':QAReview.objects.filter(status='Pending').count(),
+  'documents':Document.objects.count(),
+  'reports':Report.objects.count(),
+  'unread_notifications':Notification.objects.filter(is_read=False).count(),
+  'work_order_status':list(WorkOrder.objects.values('status').annotate(total=Count('id'))),
+  'top_clients':list(Client.objects.annotate(order_count=Count('work_orders')).order_by('-order_count','name').values('id','name','order_count')[:3]),
+  'top_vendors':list(Vendor.objects.annotate(assignment_count=Count('assignments')).order_by('-assignment_count','name').values('id','name','assignment_count')[:3]),
+ })

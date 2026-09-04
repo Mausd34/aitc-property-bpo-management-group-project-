@@ -2,15 +2,38 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 
-const API = 'https://aitc-property-bpo-management-group.onrender.com/api';
-const get = (p) => fetch(API + p).then(r => r.json());
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:8000/api'
+  : 'https://aitc-property-bpo-management-group.onrender.com/api';
+const get = (p) => fetch(API + p).then(async r => {
+  const body = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(body ? JSON.stringify(body) : 'Request failed');
+  return body;
+});
 const post = (p, data) => fetch(API + p, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(data)
-}).then(r => r.json());
+}).then(async r => {
+  const body = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(body ? JSON.stringify(body) : 'Request failed');
+  return body;
+});
+const put = (p, data) => fetch(API + p, {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data)
+}).then(async r => {
+  const body = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(body ? JSON.stringify(body) : 'Request failed');
+  return body;
+});
+const remove = (p) => fetch(API + p, { method: 'DELETE' }).then(r => {
+  if (!r.ok) throw new Error('Request failed');
+  return true;
+});
 
-const getImage = (image) => image ? `https://aitc-property-bpo-management-group.onrender.com${image}` : 'https://placehold.co/600x400/edf3fb/10233f?text=Property+Image';
+const getImage = (image) => image ? `${API.replace('/api', '')}${image}` : 'https://placehold.co/600x400/edf3fb/10233f?text=Property+Image';
 
 // Icon components
 const Icon = ({ name }) => {
@@ -35,7 +58,7 @@ const StatCard = ({ label, value, icon, color = 'primary' }) => (
 );
 
 // Property Card Component
-const PropertyCard = ({ property }) => (
+const PropertyCard = ({ property, onEdit, onDelete }) => (
   <div className="property-card">
     <div className="property-image">
       <img src={getImage(property.image)} alt={property.address} />
@@ -50,6 +73,10 @@ const PropertyCard = ({ property }) => (
         <span>Client: {property.client}</span>
       </div>
       {property.details && <p className="property-details">{property.details}</p>}
+      <div className="property-actions">
+        <button type="button" className="btn-action edit" onClick={() => onEdit(property)}>Edit</button>
+        <button type="button" className="btn-action delete" onClick={() => onDelete(property)}>Delete</button>
+      </div>
     </div>
   </div>
 );
@@ -187,12 +214,36 @@ function App() {
   const [data, setData] = useState(null);
   const [orders, setOrders] = useState([]);
   const [properties, setProperties] = useState([]);
+  const [vendors, setVendors] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [reports, setReports] = useState([]);
   const [qaReviews, setQaReviews] = useState([]);
+  const [clients, setClients] = useState([]);
   const [tab, setTab] = useState('Dashboard');
+  const [editingPropertyId, setEditingPropertyId] = useState(null);
   const [form, setForm] = useState({
     client: '', address: '', property_type: 'House',
     details: '', status: 'Active'
   });
+  const [clientForm, setClientForm] = useState({
+    client_name: '', client_email: '', client_phone: '', client_address: '', client_status: 'Active'
+  });
+  const [editClientForm, setEditClientForm] = useState({
+    client_name: '', client_email: '', client_phone: '', client_address: '', client_status: 'Active'
+  });
+  const [showWorkOrderForm, setShowWorkOrderForm] = useState(false);
+  const [editingWorkOrderId, setEditingWorkOrderId] = useState(null);
+  const [workOrderMessage, setWorkOrderMessage] = useState(null);
+  const [workOrderForm, setWorkOrderForm] = useState({
+    title: '', client: '', property: '', work_type: '', vendor: '', assigned_to: '',
+    status: 'New', priority: 'Medium', due_date: '', description: ''
+  });
+  const [vendorForm, setVendorForm] = useState({ name: '', email: '', phone: '', service_area: '', status: 'Active' });
+  const [editingVendorId, setEditingVendorId] = useState(null);
+  const [vendorMessage, setVendorMessage] = useState(null);
+  const [editingClientId, setEditingClientId] = useState(null);
+  const [clientMessage, setClientMessage] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const handleLogin = (userData) => {
@@ -216,38 +267,28 @@ function App() {
     }
   }, []);
 
-  // Default sample data for demonstration
-  const defaultData = {
-    clients: 18,
-    properties: 24,
-    work_orders: 42,
-    vendors: 12,
-    qa_reviews: 156,
-    documents: 89,
-    unread_notifications: 5,
-    work_order_status: [
-      { status: 'Completed', count: 28 },
-      { status: 'In Progress', count: 10 },
-      { status: 'Pending', count: 4 }
-    ]
-  };
-
-  const load = () => Promise.all([
+  const load = () => Promise.allSettled([
     get('/dashboard/'),
     get('/work-orders/'),
     get('/properties/'),
-    get('/qa-reviews/')
-  ]).then(([a, b, c, e]) => {
-    setData(a || defaultData);
-    setOrders(b || []);
-    setProperties(c || []);
-    setQaReviews(e || []);
-  }).catch(() => {
-    // Use sample data when API is unavailable
-    setData(defaultData);
-    setOrders([]);
-    setProperties([]);
-    setQaReviews([]);
+    get('/qa-reviews/'),
+    get('/clients/'),
+    get('/vendors/'),
+    get('/assignments/'),
+    get('/documents/'),
+    get('/reports/')
+  ]).then(([dashboardResult, ordersResult, propertiesResult, qaResult, clientsResult, vendorsResult, assignmentsResult, documentsResult, reportsResult]) => {
+    if (dashboardResult.status === 'fulfilled') setData(dashboardResult.value);
+    if (ordersResult.status === 'fulfilled') setOrders(ordersResult.value || []);
+    if (propertiesResult.status === 'fulfilled') setProperties(propertiesResult.value || []);
+    if (qaResult.status === 'fulfilled') setQaReviews(qaResult.value || []);
+    if (clientsResult.status === 'fulfilled') {
+      setClients((clientsResult.value || []).map(client => ({ ...client, status: client.status || 'Active' })));
+    }
+    if (vendorsResult.status === 'fulfilled') setVendors(vendorsResult.value || []);
+    if (assignmentsResult.status === 'fulfilled') setAssignments(assignmentsResult.value || []);
+    if (documentsResult.status === 'fulfilled') setDocuments(documentsResult.value || []);
+    if (reportsResult.status === 'fulfilled') setReports(reportsResult.value || []);
   });
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -255,23 +296,266 @@ function App() {
     e.preventDefault();
     if (!form.client || !form.address) return;
     setSaving(true);
-    post('/properties/', form)
+    const request = editingPropertyId
+      ? put(`/properties/${editingPropertyId}/`, form)
+      : post('/properties/', form);
+    request
       .then(() => {
         setSaving(false);
         setForm({ client: '', address: '', property_type: 'House', details: '', status: 'Active' });
+        setEditingPropertyId(null);
         load();
         setTab('Properties');
       })
       .catch(() => setSaving(false));
   };
 
-  useEffect(load, []);
+  const handlePropertyEdit = (property) => {
+    setEditingPropertyId(property.id);
+    setForm({ client: String(property.client), address: property.address || '', property_type: property.property_type || 'House', details: property.details || '', status: property.status || 'Active' });
+    setTab('Properties');
+  };
+
+  const handlePropertyDelete = (property) => {
+    if (orders.some(order => order.property === property.id)) {
+      window.alert('This property cannot be deleted while it has related Work Orders.');
+      return;
+    }
+    if (!window.confirm(`Delete property "${property.address}"?`)) return;
+    remove(`/properties/${property.id}/`).then(load);
+  };
+
+  const resetWorkOrderForm = () => {
+    setWorkOrderForm({ title: '', client: '', property: '', work_type: '', vendor: '', assigned_to: '', status: 'New', priority: 'Medium', due_date: '', description: '' });
+    setEditingWorkOrderId(null);
+    setShowWorkOrderForm(false);
+  };
+
+  const handleWorkOrderChange = (e) => {
+    const { name, value } = e.target;
+    setWorkOrderForm(prev => ({ ...prev, [name]: name === 'client' ? value : value, ...(name === 'client' ? { property: '' } : {}) }));
+  };
+
+  const handleWorkOrderSubmit = (e) => {
+    e.preventDefault();
+    if (!workOrderForm.title.trim() || !workOrderForm.client || !workOrderForm.property) {
+      setWorkOrderMessage({ type: 'error', text: 'Please complete the title, client, and property fields, then try again.' });
+      return;
+    }
+
+    setSaving(true);
+    const payload = {
+      title: workOrderForm.title.trim(),
+      client: Number(workOrderForm.client),
+      property: Number(workOrderForm.property),
+      work_type: workOrderForm.work_type.trim(),
+      assigned_to: workOrderForm.assigned_to.trim(),
+      status: workOrderForm.status,
+      priority: workOrderForm.priority,
+      due_date: workOrderForm.due_date || null,
+      description: workOrderForm.description.trim()
+    };
+    const request = editingWorkOrderId
+      ? put(`/work-orders/${editingWorkOrderId}/`, payload)
+      : post('/work-orders/', payload);
+
+    request.then(savedOrder => {
+      const existingAssignment = assignments.find(assignment => assignment.work_order === savedOrder.id);
+      let assignmentRequest = Promise.resolve(null);
+      if (workOrderForm.vendor) {
+        const assignmentPayload = { work_order: savedOrder.id, vendor: Number(workOrderForm.vendor), status: 'Assigned' };
+        assignmentRequest = existingAssignment
+          ? put(`/assignments/${existingAssignment.id}/`, assignmentPayload)
+          : post('/assignments/', assignmentPayload);
+      } else if (existingAssignment) {
+        assignmentRequest = remove(`/assignments/${existingAssignment.id}/`);
+      }
+      return assignmentRequest.then(() => savedOrder);
+    }).then(savedOrder => {
+      setOrders(prev => editingWorkOrderId
+        ? prev.map(order => order.id === editingWorkOrderId ? savedOrder : order)
+        : [savedOrder, ...prev]);
+      setWorkOrderMessage({ type: 'success', text: editingWorkOrderId ? 'Work order updated successfully.' : 'Work order added successfully.' });
+      resetWorkOrderForm();
+      load();
+    }).catch(() => {
+      setWorkOrderMessage({ type: 'error', text: 'Work order could not be saved. Please try again.' });
+    }).finally(() => setSaving(false));
+  };
+
+  const handleWorkOrderEdit = (order) => {
+    setEditingWorkOrderId(order.id);
+    setShowWorkOrderForm(true);
+    setWorkOrderMessage(null);
+    setWorkOrderForm({
+      title: order.title || '', client: String(order.client || ''), property: String(order.property || ''),
+      work_type: order.work_type || '', vendor: String(assignments.find(assignment => assignment.work_order === order.id)?.vendor || ''), assigned_to: order.assigned_to || '', status: order.status || 'New',
+      priority: order.priority || 'Medium', due_date: order.due_date || '', description: order.description || ''
+    });
+  };
+
+  const handleWorkOrderDelete = (order) => {
+    if (!window.confirm(`Delete work order "${order.title || `#${order.id}`}"?`)) return;
+    remove(`/work-orders/${order.id}/`).then(() => {
+      setOrders(prev => prev.filter(item => item.id !== order.id));
+      setWorkOrderMessage({ type: 'success', text: 'Work order deleted successfully.' });
+      load();
+    }).catch(() => {
+      setWorkOrderMessage({ type: 'error', text: 'Work order could not be deleted. Please try again.' });
+    });
+  };
+
+  const selectedWorkOrderProperties = properties.filter(property => String(property.client) === String(workOrderForm.client));
+
+  const resetVendorForm = () => {
+    setVendorForm({ name: '', email: '', phone: '', service_area: '', status: 'Active' });
+    setEditingVendorId(null);
+  };
+
+  const handleVendorSubmit = (e) => {
+    e.preventDefault();
+    if (!vendorForm.name.trim()) {
+      setVendorMessage({ type: 'error', text: 'Please enter a vendor name, then try again.' });
+      return;
+    }
+    setSaving(true);
+    const payload = {
+      name: vendorForm.name.trim(), email: vendorForm.email.trim(), phone: vendorForm.phone.trim(),
+      service_area: vendorForm.service_area.trim(), status: vendorForm.status
+    };
+    const request = editingVendorId ? put(`/vendors/${editingVendorId}/`, payload) : post('/vendors/', payload);
+    request.then(savedVendor => {
+      setVendorMessage({ type: 'success', text: editingVendorId ? 'Vendor updated successfully.' : 'Vendor added successfully.' });
+      setVendors(prev => editingVendorId ? prev.map(vendor => vendor.id === editingVendorId ? savedVendor : vendor) : [savedVendor, ...prev]);
+      resetVendorForm();
+      load();
+    }).catch(() => setVendorMessage({ type: 'error', text: 'Vendor could not be saved. Please try again.' })).finally(() => setSaving(false));
+  };
+
+  const handleVendorEdit = (vendor) => {
+    setEditingVendorId(vendor.id);
+    setVendorMessage(null);
+    setVendorForm({ name: vendor.name || '', email: vendor.email || '', phone: vendor.phone || '', service_area: vendor.service_area || '', status: vendor.status || 'Active' });
+  };
+
+  const handleVendorDelete = (vendor) => {
+    if (assignments.some(assignment => assignment.vendor === vendor.id)) {
+      window.alert('This vendor cannot be deleted while assigned to a Work Order.');
+      return;
+    }
+    if (!window.confirm(`Delete vendor "${vendor.name}"?`)) return;
+    remove(`/vendors/${vendor.id}/`).then(() => {
+      setVendorMessage({ type: 'success', text: 'Vendor deleted successfully.' });
+      if (editingVendorId === vendor.id) resetVendorForm();
+      load();
+    }).catch(() => setVendorMessage({ type: 'error', text: 'Vendor could not be deleted. Please try again.' }));
+  };
+
+  const resetClientForm = () => {
+    setClientForm({ client_name: '', client_email: '', client_phone: '', client_address: '', client_status: 'Active' });
+  };
+
+  const resetEditClientForm = () => {
+    setEditClientForm({ client_name: '', client_email: '', client_phone: '', client_address: '', client_status: 'Active' });
+    setEditingClientId(null);
+  };
+
+  const handleClientSubmit = (e) => {
+    e.preventDefault();
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientForm.client_email.trim());
+    if (!clientForm.client_name.trim() || !clientForm.client_email.trim()) {
+      setClientMessage({ type: 'error', text: 'Please complete the client name and email fields, then try again.' });
+      return;
+    }
+    if (!emailIsValid) {
+      setClientMessage({ type: 'error', text: 'Please enter a valid email address, then try again.' });
+      return;
+    }
+
+    setSaving(true);
+    post('/clients/', {
+      name: clientForm.client_name.trim(),
+      email: clientForm.client_email.trim(),
+      phone: clientForm.client_phone.trim(),
+      address: clientForm.client_address.trim()
+    }).then(savedClient => {
+      setClients(prev => [{ ...savedClient, status: clientForm.client_status }, ...prev]);
+      setClientMessage({ type: 'success', text: 'Client added successfully.' });
+      resetClientForm();
+      load();
+    }).catch(() => {
+      setClientMessage({ type: 'error', text: 'Client could not be added. Please try again.' });
+    }).finally(() => setSaving(false));
+  };
+
+  const handleClientEdit = (client) => {
+    setEditingClientId(client.id);
+    setClientMessage(null);
+    setEditClientForm({
+      client_name: client.name,
+      client_email: client.email,
+      client_phone: client.phone,
+      client_address: client.address,
+      client_status: client.status
+    });
+  };
+
+  const handleClientUpdate = (e) => {
+    e.preventDefault();
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editClientForm.client_email.trim());
+    if (!editClientForm.client_name.trim() || !editClientForm.client_email.trim()) {
+      setClientMessage({ type: 'error', text: 'Please complete the client name and email fields, then try again.' });
+      return;
+    }
+    if (!emailIsValid) {
+      setClientMessage({ type: 'error', text: 'Please enter a valid email address, then try again.' });
+      return;
+    }
+
+    setSaving(true);
+    put(`/clients/${editingClientId}/`, {
+      name: editClientForm.client_name.trim(),
+      email: editClientForm.client_email.trim(),
+      phone: editClientForm.client_phone.trim(),
+      address: editClientForm.client_address.trim()
+    }).then(savedClient => {
+      setClients(prev => prev.map(client => client.id === editingClientId
+        ? { ...savedClient, status: editClientForm.client_status }
+        : client));
+      setClientMessage({ type: 'success', text: 'Client updated successfully.' });
+      resetEditClientForm();
+      load();
+    }).catch(() => {
+      setClientMessage({ type: 'error', text: 'Client could not be updated. Please try again.' });
+    }).finally(() => setSaving(false));
+  };
+
+  const handleClientDelete = (id) => {
+    remove(`/clients/${id}/`).then(() => {
+      setClients(prev => prev.filter(client => client.id !== id));
+      setClientMessage({ type: 'success', text: 'Client deleted successfully.' });
+      if (editingClientId === id) resetEditClientForm();
+      load();
+    }).catch(() => {
+      setClientMessage({ type: 'error', text: 'Client could not be deleted. Please try again.' });
+    });
+  };
+
+  const propertyCountByClient = properties.reduce((counts, property) => {
+    const clientId = String(property.client);
+    counts[clientId] = (counts[clientId] || 0) + 1;
+    return counts;
+  }, {});
+
+  useEffect(() => {
+    load();
+  }, []);
 
   const navItems = [
     { name: 'Dashboard', icon: 'dashboard' },
+    { name: 'Clients', icon: 'users' },
     { name: 'Properties', icon: 'home' },
     { name: 'Work Orders', icon: 'briefcase' },
-    { name: 'Clients', icon: 'users' },
     { name: 'Vendors', icon: 'tool' },
     { name: 'QA Review', icon: 'check' },
     { name: 'Documents', icon: 'file' },
@@ -400,7 +684,7 @@ function App() {
                   <div className="metric-card">
                     <div className="metric-header">
                       <h3>Active Properties</h3>
-                      <span className="metric-value">{Math.floor(data.properties * 0.75)}</span>
+                      <span className="metric-value">{data.active_properties ?? data.properties}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '75%'}}></div>
@@ -630,20 +914,25 @@ function App() {
           {tab === 'Properties' && (
             <>
               <section className="section">
-                <h2 className="section-title">Add New Property</h2>
+                <h2 className="section-title">{editingPropertyId ? '✏️ Edit Property' : 'Add New Property'}</h2>
                 <form className="form" onSubmit={handleSubmit}>
                   <div className="form-grid">
                     <div className="form-group">
                       <label htmlFor="client">Client ID</label>
-                      <input
+                      <select
                         id="client"
                         name="client"
-                        type="number"
                         value={form.client}
                         onChange={handleChange}
-                        placeholder="Enter Client ID"
                         required
-                      />
+                      >
+                        <option value="">Select an existing client</option>
+                        {clients.map(client => (
+                          <option key={client.id} value={client.id}>
+                            ID {client.id} | {client.name} | {client.email} | {propertyCountByClient[String(client.id)] || 0} properties
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="form-group">
                       <label htmlFor="address">Address</label>
@@ -696,9 +985,12 @@ function App() {
                       rows="4"
                     />
                   </div>
-                  <button type="submit" className="btn-success" disabled={saving}>
-                    {saving ? '⏳ Saving...' : '✓ Add Property'}
-                  </button>
+                  <div className="client-edit-actions">
+                    <button type="submit" className="btn-success" disabled={saving}>
+                      {saving ? '⏳ Saving...' : editingPropertyId ? '✓ Save Changes' : '✓ Add Property'}
+                    </button>
+                    {editingPropertyId && <button type="button" className="btn-secondary" onClick={() => { setEditingPropertyId(null); setForm({ client: '', address: '', property_type: 'House', details: '', status: 'Active' }); }}>Cancel</button>}
+                  </div>
                 </form>
               </section>
 
@@ -706,7 +998,7 @@ function App() {
                 <h2 className="section-title">Properties ({properties.length})</h2>
                 <div className="properties-grid">
                   {properties.map(prop => (
-                    <PropertyCard key={prop.id} property={prop} />
+                    <PropertyCard key={prop.id} property={prop} onEdit={handlePropertyEdit} onDelete={handlePropertyDelete} />
                   ))}
                 </div>
               </section>
@@ -714,46 +1006,127 @@ function App() {
           )}
 
           {tab === 'Work Orders' && (
-            <section className="section">
-              <h2 className="section-title">Work Orders ({orders.length})</h2>
-              <div className="work-orders-list">
-                {orders.map(order => (
-                  <WorkOrderItem key={order.id} order={order} />
-                ))}
-              </div>
-            </section>
+            <>
+              <section className="section work-orders-toolbar">
+                <div>
+                  <h2 className="section-title">Work Orders ({orders.length})</h2>
+                  <p className="client-edit-note">Manage work assignments connected to existing clients and properties.</p>
+                </div>
+                <button type="button" className="btn-primary" onClick={() => { setShowWorkOrderForm(true); setEditingWorkOrderId(null); setWorkOrderMessage(null); }}>
+                  + Add New Work Order
+                </button>
+              </section>
+
+              {showWorkOrderForm && (
+                <section className="section">
+                  <h2 className="section-title">{editingWorkOrderId ? '✏️ Edit Work Order' : '➕ Add New Work Order'}</h2>
+                  {workOrderMessage && <div className={`client-message ${workOrderMessage.type}`}>{workOrderMessage.text}</div>}
+                  <form className="form" noValidate onSubmit={handleWorkOrderSubmit}>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label htmlFor="work_order_title">Work Order Title *</label>
+                        <input id="work_order_title" name="title" value={workOrderForm.title} onChange={handleWorkOrderChange} placeholder="Enter work order title" />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="work_order_client">Client *</label>
+                        <select id="work_order_client" name="client" value={workOrderForm.client} onChange={handleWorkOrderChange}>
+                          <option value="">Select a client</option>
+                          {clients.map(client => <option key={client.id} value={client.id}>ID {client.id} | {client.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="work_order_property">Property *</label>
+                        <select id="work_order_property" name="property" value={workOrderForm.property} onChange={handleWorkOrderChange} disabled={!workOrderForm.client}>
+                          <option value="">{workOrderForm.client ? 'Select a property' : 'Select a client first'}</option>
+                          {selectedWorkOrderProperties.map(property => <option key={property.id} value={property.id}>ID {property.id} | {property.address}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="work_order_type">Work Type</label>
+                        <input id="work_order_type" name="work_type" value={workOrderForm.work_type} onChange={handleWorkOrderChange} placeholder="Inspection, repair, cleanup..." />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="work_order_vendor">Assign To Vendor</label>
+                        <select id="work_order_vendor" name="vendor" value={workOrderForm.vendor} onChange={handleWorkOrderChange}>
+                          <option value="">No vendor assigned</option>
+                          {vendors.map(vendor => <option key={vendor.id} value={vendor.id}>#{vendor.id} - {vendor.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="work_order_status">Status</label>
+                        <select id="work_order_status" name="status" value={workOrderForm.status} onChange={handleWorkOrderChange}>
+                          <option value="New">Pending</option>
+                          <option value="Assigned">Assigned</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="work_order_priority">Priority</label>
+                        <select id="work_order_priority" name="priority" value={workOrderForm.priority} onChange={handleWorkOrderChange}>
+                          <option>Low</option>
+                          <option>Medium</option>
+                          <option>High</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="work_order_due_date">Due Date</label>
+                        <input id="work_order_due_date" name="due_date" type="date" value={workOrderForm.due_date} onChange={handleWorkOrderChange} />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="work_order_description">Description / Notes</label>
+                      <textarea id="work_order_description" name="description" value={workOrderForm.description} onChange={handleWorkOrderChange} placeholder="Add notes..." rows="3" />
+                    </div>
+                    <div className="client-edit-actions">
+                      <button type="submit" className="btn-success" disabled={saving}>{saving ? '⏳ Saving...' : editingWorkOrderId ? '✓ Save Changes' : '✓ Add Work Order'}</button>
+                      {editingWorkOrderId && <button type="button" className="btn-secondary" onClick={resetWorkOrderForm}>Cancel</button>}
+                    </div>
+                  </form>
+                </section>
+              )}
+
+              {workOrderMessage && !showWorkOrderForm && <div className={`client-message ${workOrderMessage.type}`}>{workOrderMessage.text}</div>}
+              <section className="section">
+                <div className="table-responsive">
+                  <table className="data-table work-orders-table">
+                    <thead><tr><th>Title</th><th>Client</th><th>Property</th><th>Assigned To</th><th>Status</th><th>Priority</th><th>Due Date</th><th>Actions</th></tr></thead>
+                    <tbody>
+                      {orders.length === 0 ? <tr><td colSpan="8" className="placeholder">No work orders yet.</td></tr> : orders.map(order => {
+                        const client = clients.find(item => item.id === order.client);
+                        const property = properties.find(item => item.id === order.property);
+                        return <tr key={order.id}>
+                          <td><strong>{order.title || `Order #${order.id}`}</strong></td>
+                          <td>{client?.name || `Client #${order.client}`}</td>
+                          <td>{property?.address || `Property #${order.property}`}</td>
+                          <td>{vendors.find(vendor => vendor.id === assignments.find(assignment => assignment.work_order === order.id)?.vendor)?.name || order.assigned_to || '—'}</td>
+                          <td><span className={`status-badge status-${order.status?.toLowerCase().replaceAll(' ', '-')}`}>{order.status === 'New' ? 'Pending' : order.status}</span></td>
+                          <td><span className={`priority-badge priority-${(order.priority || 'Medium').toLowerCase()}`}>{order.priority || 'Medium'}</span></td>
+                          <td>{order.due_date || '—'}</td>
+                          <td><button type="button" className="btn-action edit" onClick={() => handleWorkOrderEdit(order)}>Edit</button><button type="button" className="btn-action delete" onClick={() => handleWorkOrderDelete(order)}>Delete</button></td>
+                        </tr>;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </>
           )}
 
           {tab === 'Clients' && (
             <>
               <section className="section">
                 <h2 className="section-title">➕ Add New Client</h2>
-                <form className="form" onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!form.client_name || !form.client_email) return;
-                  setSaving(true);
-                  post('/clients/', {
-                    name: form.client_name,
-                    email: form.client_email,
-                    phone: form.client_phone,
-                    address: form.client_address,
-                    status: form.client_status
-                  })
-                    .then(() => {
-                      setSaving(false);
-                      setForm({ ...form, client_name: '', client_email: '', client_phone: '', client_address: '', client_status: 'Active' });
-                      load();
-                    })
-                    .catch(() => setSaving(false));
-                }}>
+                {clientMessage && !editingClientId && <div className={`client-message ${clientMessage.type}`}>{clientMessage.text}</div>}
+                <form className="form" noValidate onSubmit={handleClientSubmit}>
                   <div className="form-grid">
                     <div className="form-group">
                       <label htmlFor="client_name">Client Name *</label>
                       <input
                         id="client_name"
                         type="text"
-                        value={form.client_name || ''}
-                        onChange={(e) => setForm({ ...form, client_name: e.target.value })}
+                        value={clientForm.client_name}
+                        onChange={(e) => setClientForm({ ...clientForm, client_name: e.target.value })}
                         placeholder="Enter client name"
                         required
                       />
@@ -763,8 +1136,8 @@ function App() {
                       <input
                         id="client_email"
                         type="email"
-                        value={form.client_email || ''}
-                        onChange={(e) => setForm({ ...form, client_email: e.target.value })}
+                        value={clientForm.client_email}
+                        onChange={(e) => setClientForm({ ...clientForm, client_email: e.target.value })}
                         placeholder="client@example.com"
                         required
                       />
@@ -774,8 +1147,8 @@ function App() {
                       <input
                         id="client_phone"
                         type="tel"
-                        value={form.client_phone || ''}
-                        onChange={(e) => setForm({ ...form, client_phone: e.target.value })}
+                        value={clientForm.client_phone}
+                        onChange={(e) => setClientForm({ ...clientForm, client_phone: e.target.value })}
                         placeholder="Phone number"
                       />
                     </div>
@@ -784,8 +1157,8 @@ function App() {
                       <input
                         id="client_address"
                         type="text"
-                        value={form.client_address || ''}
-                        onChange={(e) => setForm({ ...form, client_address: e.target.value })}
+                        value={clientForm.client_address}
+                        onChange={(e) => setClientForm({ ...clientForm, client_address: e.target.value })}
                         placeholder="City, State"
                       />
                     </div>
@@ -793,8 +1166,8 @@ function App() {
                       <label htmlFor="client_status">Status</label>
                       <select
                         id="client_status"
-                        value={form.client_status || 'Active'}
-                        onChange={(e) => setForm({ ...form, client_status: e.target.value })}
+                        value={clientForm.client_status}
+                        onChange={(e) => setClientForm({ ...clientForm, client_status: e.target.value })}
                       >
                         <option>Active</option>
                         <option>Inactive</option>
@@ -802,15 +1175,16 @@ function App() {
                       </select>
                     </div>
                   </div>
-                  <button type="submit" className="btn-success" disabled={saving}>
-                    {saving ? '⏳ Saving...' : '✓ Add Client'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button type="submit" className="btn-success" disabled={saving}>
+                      {saving ? '⏳ Saving...' : '✓ Add Client'}
+                    </button>
+                  </div>
                 </form>
               </section>
 
-              {/* Clients Table */}
               <section className="section">
-                <h2 className="section-title">👥 Clients List ({(data?.clients || 0) + (properties.length > 0 ? 5 : 0)})</h2>
+                <h2 className="section-title">👥 Clients List ({clients.length})</h2>
                 <div className="table-responsive">
                   <table className="data-table">
                     <thead>
@@ -825,51 +1199,58 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td><strong>Paramount Real Estate</strong></td>
-                        <td>contact@paramount.com</td>
-                        <td>(555) 111-1111</td>
-                        <td>Los Angeles, CA</td>
-                        <td><span className="rating">8 Properties</span></td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>Urban Properties Group</strong></td>
-                        <td>info@urbanprop.com</td>
-                        <td>(555) 222-2222</td>
-                        <td>San Francisco, CA</td>
-                        <td><span className="rating">6 Properties</span></td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>Capital Investments LLC</strong></td>
-                        <td>admin@capitalinv.com</td>
-                        <td>(555) 333-3333</td>
-                        <td>Denver, CO</td>
-                        <td><span className="rating">5 Properties</span></td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>Midwest Realty Partners</strong></td>
-                        <td>team@midwestrp.com</td>
-                        <td>(555) 444-4444</td>
-                        <td>Chicago, IL</td>
-                        <td><span className="rating">4 Properties</span></td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>Sunrise Development</strong></td>
-                        <td>hello@sunrisedv.com</td>
-                        <td>(555) 555-5555</td>
-                        <td>Miami, FL</td>
-                        <td><span className="rating">3 Properties</span></td>
-                        <td><span className="status-badge status-inactive">Inactive</span></td>
-                        <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
+                      {clients.map(client => (
+                        <React.Fragment key={client.id}>
+                          <tr>
+                            <td><strong>{client.name}</strong></td>
+                            <td>{client.email}</td>
+                            <td>{client.phone || '—'}</td>
+                            <td>{client.address || '—'}</td>
+                            <td><span className="rating">{propertyCountByClient[String(client.id)] || 0} Properties</span></td>
+                            <td><span className={`status-badge status-${(client.status || 'Active').toLowerCase()}`}>{client.status || 'Active'}</span></td>
+                            <td>
+                              <button type="button" className="btn-action edit" onClick={() => handleClientEdit(client)}>Edit</button>
+                              <button type="button" className="btn-action delete" onClick={() => handleClientDelete(client.id)}>Delete</button>
+                            </td>
+                          </tr>
+                          {editingClientId === client.id && (
+                            <tr className="client-edit-row">
+                              <td colSpan="7">
+                                <div className="client-inline-edit">
+                                  <h3>✏️ Edit {client.name}</h3>
+                                  {clientMessage && <div className={`client-message ${clientMessage.type}`}>{clientMessage.text}</div>}
+                                  <form className="form" noValidate onSubmit={handleClientUpdate}>
+                                    <div className="form-grid">
+                                      <div className="form-group">
+                                        <label htmlFor={`edit_client_name_${client.id}`}>Client Name *</label>
+                                        <input id={`edit_client_name_${client.id}`} type="text" value={editClientForm.client_name} onChange={(e) => setEditClientForm({ ...editClientForm, client_name: e.target.value })} />
+                                      </div>
+                                      <div className="form-group">
+                                        <label htmlFor={`edit_client_email_${client.id}`}>Email *</label>
+                                        <input id={`edit_client_email_${client.id}`} type="email" value={editClientForm.client_email} onChange={(e) => setEditClientForm({ ...editClientForm, client_email: e.target.value })} />
+                                      </div>
+                                      <div className="form-group">
+                                        <label htmlFor={`edit_client_phone_${client.id}`}>Phone Number</label>
+                                        <input id={`edit_client_phone_${client.id}`} type="tel" value={editClientForm.client_phone} onChange={(e) => setEditClientForm({ ...editClientForm, client_phone: e.target.value })} />
+                                      </div>
+                                      <div className="form-group">
+                                        <label htmlFor={`edit_client_address_${client.id}`}>Address</label>
+                                        <input id={`edit_client_address_${client.id}`} type="text" value={editClientForm.client_address} onChange={(e) => setEditClientForm({ ...editClientForm, client_address: e.target.value })} />
+                                      </div>
+                                    </div>
+                                    <div className="client-edit-actions">
+                                      <button type="submit" className="btn-success" disabled={saving}>
+                                        {saving ? '⏳ Saving...' : '✓ Save Changes'}
+                                      </button>
+                                      <button type="button" className="btn-secondary" onClick={resetEditClientForm}>Cancel</button>
+                                    </div>
+                                  </form>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -954,7 +1335,7 @@ function App() {
                   <div className="metric-card">
                     <div className="metric-header">
                       <h3>Total Active Clients</h3>
-                      <span className="metric-value">18</span>
+                      <span className="metric-value">{clients.length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '90%'}}></div>
@@ -999,34 +1380,17 @@ function App() {
           {tab === 'Vendors' && (
             <>
               <section className="section">
-                <h2 className="section-title">➕ Add New Vendor</h2>
-                <form className="form" onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!form.name || !form.service_area) return;
-                  setSaving(true);
-                  post('/vendors/', {
-                    name: form.name,
-                    email: form.email,
-                    phone: form.phone,
-                    service_area: form.service_area,
-                    rating: parseFloat(form.rating) || 0,
-                    status: form.status
-                  })
-                    .then(() => {
-                      setSaving(false);
-                      setForm({ name: '', email: '', phone: '', service_area: '', rating: '5.0', status: 'Active' });
-                      load();
-                    })
-                    .catch(() => setSaving(false));
-                }}>
+                <h2 className="section-title">{editingVendorId ? '✏️ Edit Vendor' : '➕ Add New Vendor'}</h2>
+                {vendorMessage && <div className={`client-message ${vendorMessage.type}`}>{vendorMessage.text}</div>}
+                <form className="form" onSubmit={handleVendorSubmit}>
                   <div className="form-grid">
                     <div className="form-group">
                       <label htmlFor="vendor_name">Vendor Name *</label>
                       <input
                         id="vendor_name"
                         type="text"
-                        value={form.name}
-                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        value={vendorForm.name}
+                        onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })}
                         placeholder="Enter vendor name"
                         required
                       />
@@ -1036,8 +1400,8 @@ function App() {
                       <input
                         id="vendor_email"
                         type="email"
-                        value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        value={vendorForm.email}
+                        onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
                         placeholder="vendor@example.com"
                       />
                     </div>
@@ -1046,8 +1410,8 @@ function App() {
                       <input
                         id="vendor_phone"
                         type="tel"
-                        value={form.phone}
-                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        value={vendorForm.phone}
+                        onChange={(e) => setVendorForm({ ...vendorForm, phone: e.target.value })}
                         placeholder="Phone number"
                       />
                     </div>
@@ -1056,31 +1420,18 @@ function App() {
                       <input
                         id="vendor_service_area"
                         type="text"
-                        value={form.service_area}
-                        onChange={(e) => setForm({ ...form, service_area: e.target.value })}
+                        value={vendorForm.service_area}
+                        onChange={(e) => setVendorForm({ ...vendorForm, service_area: e.target.value })}
                         placeholder="e.g., North County, Downtown"
                         required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="vendor_rating">Rating (0-5)</label>
-                      <input
-                        id="vendor_rating"
-                        type="number"
-                        min="0"
-                        max="5"
-                        step="0.1"
-                        value={form.rating}
-                        onChange={(e) => setForm({ ...form, rating: e.target.value })}
-                        placeholder="5.0"
                       />
                     </div>
                     <div className="form-group">
                       <label htmlFor="vendor_status">Status</label>
                       <select
                         id="vendor_status"
-                        value={form.status}
-                        onChange={(e) => setForm({ ...form, status: e.target.value })}
+                        value={vendorForm.status}
+                        onChange={(e) => setVendorForm({ ...vendorForm, status: e.target.value })}
                       >
                         <option>Active</option>
                         <option>Inactive</option>
@@ -1088,16 +1439,19 @@ function App() {
                       </select>
                     </div>
                   </div>
-                  <button type="submit" className="btn-success" disabled={saving}>
-                    {saving ? '⏳ Saving...' : '✓ Add Vendor'}
-                  </button>
+                  <div className="client-edit-actions">
+                    <button type="submit" className="btn-success" disabled={saving}>
+                      {saving ? '⏳ Saving...' : editingVendorId ? '✓ Save Changes' : '✓ Add Vendor'}
+                    </button>
+                    {editingVendorId && <button type="button" className="btn-secondary" onClick={resetVendorForm}>Cancel</button>}
+                  </div>
                 </form>
               </section>
 
               {/* Vendors Table */}
               <section className="section">
-                <h2 className="section-title">👥 Vendors List ({(data?.vendors || 0) + (orders.length > 0 ? 3 : 0)})</h2>
-                {orders && orders.length > 0 ? (
+                <h2 className="section-title">👥 Vendors List ({vendors.length})</h2>
+                {vendors.length > 0 ? (
                   <div className="table-responsive">
                     <table className="data-table">
                       <thead>
@@ -1106,63 +1460,29 @@ function App() {
                           <th>Service Area</th>
                           <th>Email</th>
                           <th>Phone</th>
-                          <th>Rating</th>
                           <th>Status</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Sample vendors */}
-                        <tr>
-                          <td><strong>Elite Maintenance Co</strong></td>
-                          <td>North County</td>
-                          <td>info@elite.com</td>
-                          <td>(555) 123-4567</td>
-                          <td><span className="rating">⭐ 4.8</span></td>
-                          <td><span className="status-badge status-active">Active</span></td>
-                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                        </tr>
-                        <tr>
-                          <td><strong>Pro Services LLC</strong></td>
-                          <td>Downtown</td>
-                          <td>contact@proservices.com</td>
-                          <td>(555) 234-5678</td>
-                          <td><span className="rating">⭐ 4.6</span></td>
-                          <td><span className="status-badge status-active">Active</span></td>
-                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                        </tr>
-                        <tr>
-                          <td><strong>Quality Repairs Group</strong></td>
-                          <td>Suburbs</td>
-                          <td>support@qualityrepairs.com</td>
-                          <td>(555) 345-6789</td>
-                          <td><span className="rating">⭐ 4.5</span></td>
-                          <td><span className="status-badge status-active">Active</span></td>
-                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                        </tr>
-                        <tr>
-                          <td><strong>BuildPro Contractors</strong></td>
-                          <td>East Side</td>
-                          <td>hello@buildpro.com</td>
-                          <td>(555) 456-7890</td>
-                          <td><span className="rating">⭐ 4.3</span></td>
-                          <td><span className="status-badge status-active">Active</span></td>
-                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                        </tr>
-                        <tr>
-                          <td><strong>Swift Repairs Inc</strong></td>
-                          <td>West Valley</td>
-                          <td>service@swiftrepairs.com</td>
-                          <td>(555) 567-8901</td>
-                          <td><span className="rating">⭐ 4.2</span></td>
-                          <td><span className="status-badge status-inactive">Inactive</span></td>
-                          <td><button className="btn-action edit">Edit</button> <button className="btn-action delete">Delete</button></td>
-                        </tr>
+                        {vendors.map(vendor => (
+                          <tr key={vendor.id}>
+                            <td><strong>#{vendor.id} - {vendor.name}</strong></td>
+                            <td>{vendor.service_area || '—'}</td>
+                            <td>{vendor.email || '—'}</td>
+                            <td>{vendor.phone || '—'}</td>
+                            <td><span className={`status-badge status-${(vendor.status || 'Active').toLowerCase()}`}>{vendor.status || 'Active'}</span></td>
+                            <td>
+                              <button type="button" className="btn-action edit" onClick={() => handleVendorEdit(vendor)}>Edit</button>
+                              <button type="button" className="btn-action delete" onClick={() => handleVendorDelete(vendor)}>Delete</button>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
                 ) : (
-                  <p className="placeholder">Loading vendors data...</p>
+                  <p className="placeholder">No vendors added yet.</p>
                 )}
               </section>
 
@@ -1173,7 +1493,6 @@ function App() {
                   <div className="vendor-card">
                     <div className="vendor-header">
                       <h3>Elite Maintenance Co</h3>
-                      <span className="rating-large">⭐ 4.8</span>
                     </div>
                     <div className="vendor-stats">
                       <div className="stat-item">
@@ -1184,10 +1503,6 @@ function App() {
                         <p className="stat-label">On-Time Rate</p>
                         <p className="stat-value">96%</p>
                       </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Quality Score</p>
-                        <p className="stat-value">4.8/5</p>
-                      </div>
                     </div>
                     <div className="vendor-area">Service Area: North County</div>
                   </div>
@@ -1195,7 +1510,6 @@ function App() {
                   <div className="vendor-card">
                     <div className="vendor-header">
                       <h3>Pro Services LLC</h3>
-                      <span className="rating-large">⭐ 4.6</span>
                     </div>
                     <div className="vendor-stats">
                       <div className="stat-item">
@@ -1206,10 +1520,6 @@ function App() {
                         <p className="stat-label">On-Time Rate</p>
                         <p className="stat-value">93%</p>
                       </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Quality Score</p>
-                        <p className="stat-value">4.6/5</p>
-                      </div>
                     </div>
                     <div className="vendor-area">Service Area: Downtown</div>
                   </div>
@@ -1217,7 +1527,6 @@ function App() {
                   <div className="vendor-card">
                     <div className="vendor-header">
                       <h3>Quality Repairs Group</h3>
-                      <span className="rating-large">⭐ 4.5</span>
                     </div>
                     <div className="vendor-stats">
                       <div className="stat-item">
@@ -1227,10 +1536,6 @@ function App() {
                       <div className="stat-item">
                         <p className="stat-label">On-Time Rate</p>
                         <p className="stat-value">91%</p>
-                      </div>
-                      <div className="stat-item">
-                        <p className="stat-label">Quality Score</p>
-                        <p className="stat-value">4.5/5</p>
                       </div>
                     </div>
                     <div className="vendor-area">Service Area: Suburbs</div>
@@ -1244,8 +1549,8 @@ function App() {
                 <div className="metrics-grid">
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Total Active Vendors</h3>
-                      <span className="metric-value">12</span>
+                      <h3>Total Vendors</h3>
+                      <span className="metric-value">{vendors.length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '80%'}}></div>
@@ -1261,16 +1566,6 @@ function App() {
                       <div className="progress-fill" style={{width: '94%'}}></div>
                     </div>
                     <p className="metric-label">Above industry standard</p>
-                  </div>
-                  <div className="metric-card">
-                    <div className="metric-header">
-                      <h3>Avg. Quality Rating</h3>
-                      <span className="metric-value">4.6/5</span>
-                    </div>
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{width: '92%'}}></div>
-                    </div>
-                    <p className="metric-label">Excellent vendor performance</p>
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
@@ -1293,18 +1588,16 @@ function App() {
                 <h2 className="section-title">➕ Add New QA Review</h2>
                 <form className="form" onSubmit={(e) => {
                   e.preventDefault();
-                  if (!form.qa_work_order || !form.qa_reviewer) return;
+                  if (!form.qa_work_order) return;
                   setSaving(true);
                   post('/qa-reviews/', {
-                    work_order_id: form.qa_work_order,
-                    reviewer: form.qa_reviewer,
-                    rating: parseFloat(form.qa_rating) || 5,
+                    work_order: Number(form.qa_work_order),
                     comments: form.qa_comments,
                     status: form.qa_status
                   })
                     .then(() => {
                       setSaving(false);
-                      setForm({ ...form, qa_work_order: '', qa_reviewer: '', qa_rating: '5.0', qa_comments: '', qa_status: 'Pass' });
+                      setForm({ ...form, qa_work_order: '', qa_comments: '', qa_status: 'Pending' });
                       load();
                     })
                     .catch(() => setSaving(false));
@@ -1312,45 +1605,24 @@ function App() {
                   <div className="form-grid">
                     <div className="form-group">
                       <label htmlFor="qa_work_order">Work Order ID *</label>
-                      <input
+                      <select
                         id="qa_work_order"
-                        type="number"
                         value={form.qa_work_order || ''}
                         onChange={(e) => setForm({ ...form, qa_work_order: e.target.value })}
-                        placeholder="Enter work order ID"
                         required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="qa_reviewer">Reviewer Name *</label>
-                      <input
-                        id="qa_reviewer"
-                        type="text"
-                        value={form.qa_reviewer || ''}
-                        onChange={(e) => setForm({ ...form, qa_reviewer: e.target.value })}
-                        placeholder="QA reviewer name"
-                        required
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="qa_rating">Quality Rating (1-5)</label>
-                      <input
-                        id="qa_rating"
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={form.qa_rating || '5'}
-                        onChange={(e) => setForm({ ...form, qa_rating: e.target.value })}
-                        placeholder="5.0"
-                      />
+                      >
+                        <option value="">Select a work order</option>
+                        {orders.map(order => <option key={order.id} value={order.id}>#{order.id} - {order.title || 'Untitled work order'}</option>)}
+                      </select>
                     </div>
                     <div className="form-group">
                       <label htmlFor="qa_status">Review Status</label>
                       <select
                         id="qa_status"
-                        value={form.qa_status || 'Pass'}
+                        value={form.qa_status || 'Pending'}
                         onChange={(e) => setForm({ ...form, qa_status: e.target.value })}
                       >
+                        <option>Pending</option>
                         <option>Pass</option>
                         <option>Fail</option>
                         <option>Conditional Pass</option>
@@ -1375,14 +1647,12 @@ function App() {
 
               {/* QA Reviews Table */}
               <section className="section">
-                <h2 className="section-title">✅ QA Reviews List ({(qaReviews.length || 0) + (data?.qa_reviews || 0)})</h2>
+                <h2 className="section-title">✅ QA Reviews List ({qaReviews.length})</h2>
                 <div className="table-responsive">
                   <table className="data-table">
                     <thead>
                       <tr>
                         <th>Work Order</th>
-                        <th>Reviewer</th>
-                        <th>Rating</th>
                         <th>Status</th>
                         <th>Comments</th>
                         <th>Date</th>
@@ -1390,51 +1660,15 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td><strong>#WO-2024-001</strong></td>
-                        <td>Sarah Johnson</td>
-                        <td><span className="rating">⭐ 5.0</span></td>
-                        <td><span className="status-badge status-active">Pass</span></td>
-                        <td>Excellent work quality and timely completion</td>
-                        <td>2024-12-28</td>
-                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>#WO-2024-002</strong></td>
-                        <td>Michael Chen</td>
-                        <td><span className="rating">⭐ 4.5</span></td>
-                        <td><span className="status-badge status-active">Pass</span></td>
-                        <td>Good quality with minor improvements needed</td>
-                        <td>2024-12-27</td>
-                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>#WO-2024-003</strong></td>
-                        <td>Lisa Rodriguez</td>
-                        <td><span className="rating">⭐ 3.5</span></td>
-                        <td><span className="status-badge" style={{background: 'rgba(249,115,22,0.2)', color: '#f59e0b', border: '1px solid rgba(249,115,22,0.3)'}}>Conditional Pass</span></td>
-                        <td>Requires rework on finishing details</td>
-                        <td>2024-12-26</td>
-                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>#WO-2024-004</strong></td>
-                        <td>James Williams</td>
-                        <td><span className="rating">⭐ 2.0</span></td>
-                        <td><span className="status-badge" style={{background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)'}}>Fail</span></td>
-                        <td>Quality issues - redo entire section required</td>
-                        <td>2024-12-25</td>
-                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>#WO-2024-005</strong></td>
-                        <td>Emma Davis</td>
-                        <td><span className="rating">⭐ 4.8</span></td>
-                        <td><span className="status-badge status-active">Pass</span></td>
-                        <td>Outstanding work, exceeds expectations</td>
-                        <td>2024-12-24</td>
-                        <td><button className="btn-action edit">View</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
+                      {qaReviews.length === 0 ? <tr><td colSpan="5" className="placeholder">No QA reviews yet.</td></tr> : qaReviews.map(review => (
+                        <tr key={review.id}>
+                          <td><strong>#{review.work_order}</strong></td>
+                          <td><span className={`status-badge status-${(review.status || 'Pending').toLowerCase().replaceAll(' ', '-')}`}>{review.status || 'Pending'}</span></td>
+                          <td>{review.comments || '—'}</td>
+                          <td>{review.review_date ? new Date(review.review_date).toLocaleDateString() : '—'}</td>
+                          <td><button type="button" className="btn-action delete" onClick={() => remove(`/qa-reviews/${review.id}/`).then(load)}>Delete</button></td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -1447,7 +1681,7 @@ function App() {
                   <div className="metric-card">
                     <div className="metric-header">
                       <h3>Total Reviews Completed</h3>
-                      <span className="metric-value">247</span>
+                      <span className="metric-value">{qaReviews.length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '98%'}}></div>
@@ -1466,8 +1700,8 @@ function App() {
                   </div>
                   <div className="metric-card">
                     <div className="metric-header">
-                      <h3>Average Quality Score</h3>
-                      <span className="metric-value">4.6/5</span>
+                      <h3>Pending Reviews</h3>
+                      <span className="metric-value">{qaReviews.filter(review => review.status === 'Pending').length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '92%'}}></div>
@@ -1498,11 +1732,9 @@ function App() {
                   if (!form.doc_name || !form.doc_type) return;
                   setSaving(true);
                   post('/documents/', {
-                    name: form.doc_name,
-                    document_type: form.doc_type,
-                    work_order_id: form.doc_work_order || null,
-                    description: form.doc_description,
-                    status: form.doc_status
+                    file_name: form.doc_name,
+                    file_type: form.doc_type,
+                    work_order: Number(form.doc_work_order)
                   })
                     .then(() => {
                       setSaving(false);
@@ -1540,36 +1772,16 @@ function App() {
                     </div>
                     <div className="form-group">
                       <label htmlFor="doc_work_order">Related Work Order</label>
-                      <input
+                      <select
                         id="doc_work_order"
-                        type="number"
                         value={form.doc_work_order || ''}
                         onChange={(e) => setForm({ ...form, doc_work_order: e.target.value })}
-                        placeholder="Work order ID (optional)"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="doc_status">Status</label>
-                      <select
-                        id="doc_status"
-                        value={form.doc_status || 'Active'}
-                        onChange={(e) => setForm({ ...form, doc_status: e.target.value })}
+                        required
                       >
-                        <option>Active</option>
-                        <option>Archived</option>
-                        <option>Draft</option>
+                        <option value="">Select a work order</option>
+                        {orders.map(order => <option key={order.id} value={order.id}>#{order.id} - {order.title || 'Untitled work order'}</option>)}
                       </select>
                     </div>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="doc_description">Description</label>
-                    <textarea
-                      id="doc_description"
-                      value={form.doc_description || ''}
-                      onChange={(e) => setForm({ ...form, doc_description: e.target.value })}
-                      placeholder="Document description..."
-                      rows="3"
-                    />
                   </div>
                   <button type="submit" className="btn-success" disabled={saving}>
                     {saving ? '⏳ Uploading...' : '✓ Upload Document'}
@@ -1579,7 +1791,7 @@ function App() {
 
               {/* Documents Table */}
               <section className="section">
-                <h2 className="section-title">📄 Documents Library ({(data?.documents || 0) + 8})</h2>
+                <h2 className="section-title">📄 Documents Library ({documents.length})</h2>
                 <div className="table-responsive">
                   <table className="data-table">
                     <thead>
@@ -1594,78 +1806,17 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td><strong>📋 Inspection Report - Property 42</strong></td>
-                        <td><span className="rating">Report</span></td>
-                        <td>#WO-2024-042</td>
-                        <td>2.4 MB</td>
-                        <td>2024-12-28</td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>💰 Invoice - Labor Services</strong></td>
-                        <td><span className="rating">Invoice</span></td>
-                        <td>#WO-2024-040</td>
-                        <td>1.2 MB</td>
-                        <td>2024-12-27</td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>📑 Service Agreement - Paramount</strong></td>
-                        <td><span className="rating">Contract</span></td>
-                        <td>#WO-2024-038</td>
-                        <td>3.1 MB</td>
-                        <td>2024-12-26</td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>📸 Before & After Photos</strong></td>
-                        <td><span className="rating">Photo</span></td>
-                        <td>#WO-2024-035</td>
-                        <td>15.8 MB</td>
-                        <td>2024-12-25</td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>✅ Work Completion Certificate</strong></td>
-                        <td><span className="rating">Certificate</span></td>
-                        <td>#WO-2024-032</td>
-                        <td>0.9 MB</td>
-                        <td>2024-12-24</td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>📊 Monthly Report - December</strong></td>
-                        <td><span className="rating">Report</span></td>
-                        <td>—</td>
-                        <td>4.5 MB</td>
-                        <td>2024-12-23</td>
-                        <td><span className="status-badge status-active">Active</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>📄 Insurance Claim Form</strong></td>
-                        <td><span className="rating">Other</span></td>
-                        <td>#WO-2024-028</td>
-                        <td>2.1 MB</td>
-                        <td>2024-12-22</td>
-                        <td><span className="status-badge" style={{background: 'rgba(107,114,128,0.2)', color: '#9ca3af', border: '1px solid rgba(107,114,128,0.3)'}}>Archived</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>📋 Draft - Q1 Planning</strong></td>
-                        <td><span className="rating">Report</span></td>
-                        <td>—</td>
-                        <td>1.8 MB</td>
-                        <td>2024-12-21</td>
-                        <td><span className="status-badge" style={{background: 'rgba(107,114,128,0.2)', color: '#9ca3af', border: '1px solid rgba(107,114,128,0.3)'}}>Draft</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
+                      {documents.length === 0 ? <tr><td colSpan="7" className="placeholder">No documents yet.</td></tr> : documents.map(document => (
+                        <tr key={document.id}>
+                          <td><strong>{document.file_name}</strong></td>
+                          <td>{document.file_type || '—'}</td>
+                          <td>#{document.work_order}</td>
+                          <td>{document.file_path ? 'Available' : 'Metadata only'}</td>
+                          <td>{document.upload_date ? new Date(document.upload_date).toLocaleDateString() : '—'}</td>
+                          <td><span className="status-badge status-active">Stored</span></td>
+                          <td><button type="button" className="btn-action delete" onClick={() => remove(`/documents/${document.id}/`).then(load)}>Delete</button></td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -1678,7 +1829,7 @@ function App() {
                   <div className="metric-card">
                     <div className="metric-header">
                       <h3>Total Documents</h3>
-                      <span className="metric-value">156</span>
+                      <span className="metric-value">{documents.length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '78%'}}></div>
@@ -1698,7 +1849,7 @@ function App() {
                   <div className="metric-card">
                     <div className="metric-header">
                       <h3>Recent Uploads</h3>
-                      <span className="metric-value">24</span>
+                      <span className="metric-value">{documents.length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '85%'}}></div>
@@ -1729,11 +1880,7 @@ function App() {
                   if (!form.report_type) return;
                   setSaving(true);
                   post('/reports/', {
-                    report_type: form.report_type,
-                    start_date: form.report_start || null,
-                    end_date: form.report_end || null,
-                    filters: form.report_filters || '',
-                    format: form.report_format || 'PDF'
+                    report_type: form.report_type
                   })
                     .then(() => {
                       setSaving(false);
@@ -1758,47 +1905,6 @@ function App() {
                         <option>Vendor Performance</option>
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label htmlFor="report_start">Start Date</label>
-                      <input
-                        id="report_start"
-                        type="date"
-                        value={form.report_start || ''}
-                        onChange={(e) => setForm({ ...form, report_start: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="report_end">End Date</label>
-                      <input
-                        id="report_end"
-                        type="date"
-                        value={form.report_end || ''}
-                        onChange={(e) => setForm({ ...form, report_end: e.target.value })}
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="report_format">Export Format</label>
-                      <select
-                        id="report_format"
-                        value={form.report_format || 'PDF'}
-                        onChange={(e) => setForm({ ...form, report_format: e.target.value })}
-                      >
-                        <option>PDF</option>
-                        <option>Excel</option>
-                        <option>CSV</option>
-                        <option>JSON</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="report_filters">Additional Filters</label>
-                    <textarea
-                      id="report_filters"
-                      value={form.report_filters || ''}
-                      onChange={(e) => setForm({ ...form, report_filters: e.target.value })}
-                      placeholder="e.g., Filter by client, vendor, status..."
-                      rows="3"
-                    />
                   </div>
                   <button type="submit" className="btn-success" disabled={saving}>
                     {saving ? '⏳ Generating...' : '✓ Generate Report'}
@@ -1808,7 +1914,7 @@ function App() {
 
               {/* Reports List */}
               <section className="section">
-                <h2 className="section-title">📊 Recent Reports ({(data?.reports || 0) + 8})</h2>
+                <h2 className="section-title">📊 Recent Reports ({reports.length})</h2>
                 <div className="table-responsive">
                   <table className="data-table">
                     <thead>
@@ -1823,78 +1929,17 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <td><strong>📈 December Performance Report</strong></td>
-                        <td><span className="rating">Performance</span></td>
-                        <td>Dec 1 - Dec 31, 2024</td>
-                        <td>PDF</td>
-                        <td>2024-12-28</td>
-                        <td><span className="status-badge status-active">Complete</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>💰 Q4 Financial Summary</strong></td>
-                        <td><span className="rating">Financial</span></td>
-                        <td>Oct 1 - Dec 31, 2024</td>
-                        <td>Excel</td>
-                        <td>2024-12-27</td>
-                        <td><span className="status-badge status-active">Complete</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>🏭 Operational Efficiency Report</strong></td>
-                        <td><span className="rating">Operational</span></td>
-                        <td>Dec 1 - Dec 31, 2024</td>
-                        <td>PDF</td>
-                        <td>2024-12-26</td>
-                        <td><span className="status-badge status-active">Complete</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>✅ Quality Assurance Metrics</strong></td>
-                        <td><span className="rating">Quality Assurance</span></td>
-                        <td>Dec 1 - Dec 31, 2024</td>
-                        <td>CSV</td>
-                        <td>2024-12-25</td>
-                        <td><span className="status-badge status-active">Complete</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>😊 Client Satisfaction Survey</strong></td>
-                        <td><span className="rating">Client Satisfaction</span></td>
-                        <td>Dec 1 - Dec 31, 2024</td>
-                        <td>PDF</td>
-                        <td>2024-12-24</td>
-                        <td><span className="status-badge status-active">Complete</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>🤝 Vendor Performance Analysis</strong></td>
-                        <td><span className="rating">Vendor Performance</span></td>
-                        <td>Dec 1 - Dec 31, 2024</td>
-                        <td>Excel</td>
-                        <td>2024-12-23</td>
-                        <td><span className="status-badge status-active">Complete</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>📈 Year-to-Date Summary</strong></td>
-                        <td><span className="rating">Performance</span></td>
-                        <td>Jan 1 - Dec 31, 2024</td>
-                        <td>PDF</td>
-                        <td>2024-12-22</td>
-                        <td><span className="status-badge status-active">Complete</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
-                      <tr>
-                        <td><strong>📊 November Trends Analysis</strong></td>
-                        <td><span className="rating">Operational</span></td>
-                        <td>Nov 1 - Nov 30, 2024</td>
-                        <td>JSON</td>
-                        <td>2024-12-20</td>
-                        <td><span className="status-badge" style={{background: 'rgba(107,114,128,0.2)', color: '#9ca3af', border: '1px solid rgba(107,114,128,0.3)'}}>Archived</span></td>
-                        <td><button className="btn-action edit">Download</button> <button className="btn-action delete">Delete</button></td>
-                      </tr>
+                      {reports.length === 0 ? <tr><td colSpan="7" className="placeholder">No reports generated yet.</td></tr> : reports.map(report => (
+                        <tr key={report.id}>
+                          <td><strong>#{report.id} {report.report_type}</strong></td>
+                          <td>{report.report_type}</td>
+                          <td>—</td>
+                          <td>—</td>
+                          <td>{report.generated_date ? new Date(report.generated_date).toLocaleDateString() : '—'}</td>
+                          <td><span className="status-badge status-active">Generated</span></td>
+                          <td><button type="button" className="btn-action delete" onClick={() => remove(`/reports/${report.id}/`).then(load)}>Delete</button></td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -1907,7 +1952,7 @@ function App() {
                   <div className="metric-card">
                     <div className="metric-header">
                       <h3>Reports Generated</h3>
-                      <span className="metric-value">847</span>
+                      <span className="metric-value">{reports.length}</span>
                     </div>
                     <div className="progress-bar">
                       <div className="progress-fill" style={{width: '85%'}}></div>

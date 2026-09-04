@@ -19,7 +19,7 @@ python manage.py runserver
 ```
 Backend: http://127.0.0.1:8000/  | Admin: http://127.0.0.1:8000/admin/ | API: http://127.0.0.1:8000/api/
 
-For PostgreSQL set DB_NAME, DB_USER, DB_PASSWORD, DB_HOST and DB_PORT environment variables. If DB_NAME is not set, SQLite is used.
+For persistent production data, attach a PostgreSQL database and set its `DATABASE_URL` environment variable (Render provides this automatically when its database connection string is linked to the web service). The app prefers `DATABASE_URL`; the separate `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, and `DB_PORT` variables remain supported. SQLite is only the local-development fallback and should not be used for deployed data.
 
 ## Run frontend
 ```bash

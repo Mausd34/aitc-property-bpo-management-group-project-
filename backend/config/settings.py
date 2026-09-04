@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -70,7 +71,18 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
-if os.getenv('DB_NAME'):
+# Production platforms such as Render provide one persistent PostgreSQL
+# connection string through DATABASE_URL. Prefer it so the application never
+# silently falls back to temporary SQLite storage in production.
+if os.getenv('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ['DATABASE_URL'],
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+elif os.getenv('DB_NAME'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
